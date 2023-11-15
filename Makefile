@@ -13,16 +13,15 @@ get:
 	go mod tidy && go mod download
 
 build:
-	@echo " > \033[32mBuilding reth...\033[0m "
+	@echo " > \033[32mBuilding ETH LSD Ejector...\033[0m "
 	go build -mod readonly $(BUILD_FLAGS) -o build/eth-lsd-ejector main.go
 
 build-linux:
 	@GOOS=linux GOARCH=amd64 go build --mod readonly $(BUILD_FLAGS) -o ./build/eth-lsd-ejector main.go
 
-install:
-	@echo " > \033[32mInstalling reth...\033[0m "
-	go install -mod readonly $(BUILD_FLAGS) ./...
-
+install: build
+	@echo " > \033[32mInstalling ETH LSD Ejector...\033[0m "
+	sudo mv build/eth-lsd-ejector /usr/local/bin/
 
 clean:
 	@echo " > \033[32mCleanning build files ...\033[0m "
@@ -42,4 +41,4 @@ get-lint:
 lint:
 	golangci-lint run ./... --skip-files ".+_test.go"
 
-.PHONY: all lint test race msan tools clean build
+.PHONY: all lint test race msan tools clean build install
