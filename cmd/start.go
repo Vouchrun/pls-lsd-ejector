@@ -190,7 +190,7 @@ func startCmd() *cobra.Command {
 
 	cmd.Flags().String(flagKeysDir, "", "Path to a directory where keystores to be imported are stored (must provide)")
 	cmd.Flags().String(flagExecutionEndpoint, "", "Execution node RPC provider endpoint (must provide)")
-	cmd.Flags().String(flagConsensusEndpoint, "", "Consensue node RPC provider endpoint (must provide)")
+	cmd.Flags().String(flagConsensusEndpoint, "", "Consensus node RPC provider endpoint (must provide)")
 	cmd.Flags().String(flagWithdrawAddress, "", "Network withdraw address")
 	cmd.Flags().String(flagLogLevel, logrus.InfoLevel.String(), "The logging level (trace|debug|info|warn|error|fatal|panic)")
 	return cmd
