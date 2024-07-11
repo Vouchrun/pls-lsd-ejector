@@ -19,9 +19,9 @@ build:
 build-linux:
 	@GOOS=linux GOARCH=amd64 go build --mod readonly $(BUILD_FLAGS) -o ./build/eth-lsd-ejector main.go
 
-install: build
+install: 
 	@echo " > \033[32mInstalling ETH LSD Ejector...\033[0m "
-	sudo mv build/eth-lsd-ejector /usr/local/bin/
+	go install -mod readonly $(BUILD_FLAGS) ./...
 
 clean:
 	@echo " > \033[32mCleanning build files ...\033[0m "
