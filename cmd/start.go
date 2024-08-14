@@ -89,6 +89,9 @@ func startCmd() *cobra.Command {
 			if err != nil {
 				return errors.Wrap(err, "parseKeysDir failed")
 			}
+			if len(keystores) == 0 {
+				return fmt.Errorf("no keystore found in directory %s", keysDir)
+			}
 
 			accountsPassword, err := prompt.PasswordPrompt(
 				"Enter the password for your imported accounts", prompt.NotEmpty,

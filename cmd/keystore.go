@@ -30,11 +30,16 @@ func parseKeysDir(keysDir string) ([]*Keystore, error) {
 			return nil, errors.Wrap(err, "could not read dir")
 		}
 		if len(files) == 0 {
-			return nil, fmt.Errorf("directory %s has no files, cannot import from it", keysDir)
+			return nil, nil
 		}
 		filesInDir := make([]string, 0)
 		for i := 0; i < len(files); i++ {
 			if files[i].IsDir() {
+				keystores, err := parseKeysDir(filepath.Join(keysDir, files[i].Name()))
+				if err != nil {
+					return nil, err
+				}
+				keystoresImported = append(keystoresImported, keystores...)
 				continue
 			}
 			filesInDir = append(filesInDir, files[i].Name())
