@@ -1,5 +1,5 @@
-# eth-lsd-ejector
+# pls-lsd-ejector
 
-Ejector service plays an important role in ETH LSD stack. Every validator should run an ejector service to properly handle the validator exiting process, as users are free to `unstake` and `withdraw`.
+Ejector service plays an important role in PLS LSD stack. Every validator should run an ejector service to properly handle the validator exiting process, as users are free to `unstake` and `withdraw` vPLS as they need, it is important for valditors to exit gracefully when required.
 
-To learn more about ETH LSD stack, see [**ETH LSD Stack Documentation and Guide**](https://lsaas-docs.stafi.io/docs/architecture/ethlsd.html)
+To learn more about PLS LSD, see [**PLS LSD Documentation and Guide**](https://vouch.run/docs/architecture/vouch_lsd.html)
