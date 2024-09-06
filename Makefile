@@ -21,7 +21,7 @@ build-linux:
 
 install: 
 	@echo " > \033[32mInstalling ETH LSD Ejector...\033[0m "
-	go install -mod readonly $(BUILD_FLAGS) -o ./build/eth-lsd-ejector ./...
+	go install -mod readonly $(BUILD_FLAGS) ./...
 	mv $${GOPATH}/bin/eth-lsd-ejector $${GOPATH}/bin/pls-lsd-ejector
 
 clean:
