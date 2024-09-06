@@ -14,14 +14,15 @@ get:
 
 build:
 	@echo " > \033[32mBuilding ETH LSD Ejector...\033[0m "
-	go build -mod readonly $(BUILD_FLAGS) -o build/pls-lsd-ejector main.go
+	go build -mod readonly $(BUILD_FLAGS) -o build/eth-lsd-ejector main.go
 
 build-linux:
-	@GOOS=linux GOARCH=amd64 go build --mod readonly $(BUILD_FLAGS) -o ./build/pls-lsd-ejector main.go
+	@GOOS=linux GOARCH=amd64 go build --mod readonly $(BUILD_FLAGS) -o ./build/eth-lsd-ejector main.go
 
 install: 
 	@echo " > \033[32mInstalling ETH LSD Ejector...\033[0m "
-	go install -mod readonly $(BUILD_FLAGS) -o build/pls-lsd-ejector ./...
+	go install -mod readonly $(BUILD_FLAGS) -o ./build/eth-lsd-ejector ./...
+	mv $${GOPATH}/bin/eth-lsd-ejector $${GOPATH}/bin/pls-lsd-ejector
 
 clean:
 	@echo " > \033[32mCleanning build files ...\033[0m "
