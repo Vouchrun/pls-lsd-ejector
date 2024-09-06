@@ -17,7 +17,7 @@ build:
 	go build -mod readonly $(BUILD_FLAGS) -o build/eth-lsd-ejector main.go
 
 build-linux:
-	@GOOS=linux GOARCH=amd64 go build --mod readonly $(BUILD_FLAGS) -o ./build/eth-lsd-ejector main.go
+	@GOOS=linux GOARCH=amd64 go build --mod readonly $(BUILD_FLAGS) -o ./build/pls-lsd-ejector main.go
 
 install: 
 	@echo " > \033[32mInstalling ETH LSD Ejector...\033[0m "
