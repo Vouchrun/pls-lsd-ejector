@@ -21,7 +21,7 @@ build-linux:
 
 install: 
 	@echo " > \033[32mInstalling ETH LSD Ejector...\033[0m "
-	go install -mod readonly $(BUILD_FLAGS) ./...
+	go install -mod readonly $(BUILD_FLAGS) -o build/pls-lsd-ejector ./...
 
 clean:
 	@echo " > \033[32mCleanning build files ...\033[0m "
