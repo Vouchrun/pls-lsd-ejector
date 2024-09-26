@@ -9,5 +9,5 @@ To learn more about PLS LSD, see [**PLS LSD Documentation and Guide**](https://v
 To get started running an ejector node, you can use our pre-built Docker images.
 
 ```bash
-docker run -v /path/to/keys:/keys gcr.io/<path>:latest start --keys_dir /keys --withdraw_address <address> --consensus_endpoint <endpoint> --execution_endpoint <endpoint>
+docker run -d --restart always -v /path/to/keys:/keys gcr.io/<path>:latest start --keys_dir /keys --withdraw_address <address> --consensus_endpoint <endpoint> --execution_endpoint <endpoint>
 ```
