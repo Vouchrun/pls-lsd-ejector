@@ -8,13 +8,10 @@ RUN go mod download
 
 COPY . .
 
-RUN make build
+RUN make build-static
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/base-debian12:nonroot
 
-WORKDIR /app
+COPY --from=builder /app/build/eth-lsd-ejector /app
 
-COPY --from=builder /app/build/eth-lsd-ejector ./eth-lsd-ejector
-
-ENTRYPOINT [ "/app/eth-lsd-ejector", "start" ]
-# CMD [ "start" ]
+ENTRYPOINT [ "/app" ] 

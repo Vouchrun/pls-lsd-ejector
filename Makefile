@@ -16,6 +16,10 @@ build:
 	@echo " > \033[32mBuilding ETH LSD Ejector...\033[0m "
 	go build -mod readonly $(BUILD_FLAGS) -o build/eth-lsd-ejector main.go
 
+build-static:
+	@echo " > \033[32mBuilding ETH LSD Ejector...\033[0m "
+	go build -mod readonly $(BUILD_FLAGS) -o build/eth-lsd-ejector --ldflags '-extldflags "-static"' main.go
+
 build-linux:
 	@GOOS=linux GOARCH=amd64 go build --mod readonly $(BUILD_FLAGS) -o ./build/eth-lsd-ejector main.go
 

@@ -8,6 +8,12 @@ To learn more about PLS LSD, see [**PLS LSD Documentation and Guide**](https://v
 
 To get started running an ejector node, you can use our pre-built Docker images.
 
+You'll need to set the ACCOUNTS_PASSWORD environment variable to run this command, you can either do this through your method of deploying (eg: Kubernetes, Kamal Deploy, Swarm). Or by running the command with `ACCOUNTS_PASSWORD="password"` prefixed, if you do this, make sure to add a leading ` ` (space) before the command to prevent it from being saved to your bash history!
+
 ```bash
-docker run -d --restart always -v /path/to/keys:/keys gcr.io/<path>:latest start --keys_dir /keys --withdraw_address <address> --consensus_endpoint <endpoint> --execution_endpoint <endpoint>
+docker run --name ejector-client -d --restart always -e ACCOUNTS_PASSWORD -v ./keys:/keys eth-lsd-ejector:latest start \
+    --consensus_endpoint  <RPC_ENDPOINT> \
+    --execution_endpoint <RPC_ENDPOINT> \
+    --keys_dir  /keys \
+    --withdraw_address <WITHDRAW_ADDRESS>
 ```
