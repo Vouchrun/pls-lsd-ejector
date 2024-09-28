@@ -94,7 +94,7 @@ func startCmd() *cobra.Command {
 				return fmt.Errorf("no keystore found in directory %s", keysDir)
 			}
 
-			accountsPassword, ok := os.LookupEnv("ACCOUNTS_PASSWORD")
+			accountsPassword, ok := os.LookupEnv("KEYSTORE_PASSWORD")
 			if !ok {
 				accountsPassword, err = prompt.PasswordPrompt(
 					"Enter the password for your imported accounts", prompt.NotEmpty,
