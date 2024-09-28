@@ -11,7 +11,7 @@ To get started running an ejector node, you can use our pre-built Docker images.
 You'll need to set the KEYSTORE_PASSWORD environment variable to run this command, you can either do this through your method of deploying (eg: Kubernetes, Kamal Deploy, Swarm). Or by running the command with `KEYSTORE_PASSWORD="password"` prefixed, if you do this, make sure to add a leading ` ` (space) before the command to prevent it from being saved to your bash history!
 
 ```bash
-docker run --name ejector-client -d --restart always -e KEYSTORE_PASSWORD -v ./keys:/keys ghcr.io/Vouchrun/pls-lsd-ejector:main start \
+docker run --name ejector-client -d --restart always -e KEYSTORE_PASSWORD -v /path/to/your/keystore:/keys ghcr.io/Vouchrun/pls-lsd-ejector:main start \
     --consensus_endpoint  <RPC_ENDPOINT> \
     --execution_endpoint <RPC_ENDPOINT> \
     --keys_dir  /keys \
