@@ -1,5 +1,12 @@
 #!/bin/bash
 
+set -euo pipefail
+
+if [ "$1" == "debug" ]; then
+    set -x
+fi
+
+
 echo -n Please enter keystore password: 
 # shellcheck disable=SC2034
 read -rs KEYSTORE_PASSWORD
@@ -15,6 +22,15 @@ read -rs EXECUTION_ENDPOINT
 echo -n Please enter wallet withdraw address: 
 # shellcheck disable=SC2034
 read -rs WITHDRAW_ADDRESS
+
+
+echo -n Please paste in the contents of your keystore file
+# shellcheck disable=SC2034
+read -rs KEYSTORE_FILE
+
+mkdir /blockchain/validator_keys
+
+echo "$KEYSTORE_FILE" > /blockchain/validator_keys/keys.json
 
 # Add Docker's official GPG key:
 apt-get update
