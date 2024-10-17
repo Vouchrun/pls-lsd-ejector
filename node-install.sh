@@ -21,7 +21,7 @@ else
 fi
 
 echo ""
-echo -n "If you require a customised relay keystore location enter the path (default)[$DEFAULT_CONFIG_PATH]: "
+echo -n "If you require a customised ejector keystore location enter the path (default)[$DEFAULT_CONFIG_PATH]: "
 read -r CONFIG_PATH
 
 if [ -z "${CONFIG_PATH}" ]; then
@@ -30,12 +30,11 @@ fi
 
 mkdir -p "$CONFIG_PATH"
 
-echo -n Please paste in the contents of your keystore file: 
+echo ""
+echo -n "Please paste in the contents of your keystore file: "
 read -r KEYSTORE_FILE
 
-mkdir /blockchain/validator_keys
-
-echo "$KEYSTORE_FILE" > /blockchain/validator_keys/keys.json
+echo "$KEYSTORE_FILE" > "$CONFIG_PATH/keys.json"
 
 
 echo ""
@@ -56,10 +55,7 @@ else
 fi
 
 
-echo ""
-echo "Created default config.toml"
-
-# Set the keystore to be readable by the relay docker user
+# Set the keystore to be readable by the ejector docker user
 chown -R 65532:65532 "$CONFIG_PATH"
 
 if docker --version ; then
@@ -120,10 +116,10 @@ if [[ ${START_SERVICE:0:1} =~ ^[Yy]$ ]]; then
         EJECTOR_CONTAINER_NAME="ejector"
     fi
 
-    docker run --name "$RELAY_CONTAINER_NAME" -d -e KEYSTORE_PASSWORD="$KEYSTORE_PASSWORD" --restart always -v "$CONFIG_PATH":/keys ghcr.io/vouchrun/pls-lsd-ejector:main start --base-path /keys --consensus_endpoint "$CONSENSUS_ENDPOINT" --execution_endpoint "$EXECUTION_ENDPOINT" --withdraw_address "$WITHDRAW_ADDRESS"
+    docker run --name "$EJECTOR_CONTAINER_NAME" -d -e KEYSTORE_PASSWORD="$KEYSTORE_PASSWORD" --restart always -v "$CONFIG_PATH":/keys ghcr.io/vouchrun/pls-lsd-ejector:main start --base-path /keys --consensus_endpoint "$CONSENSUS_ENDPOINT" --execution_endpoint "$EXECUTION_ENDPOINT" --withdraw_address "$WITHDRAW_ADDRESS"
 else
     echo ""
     echo ""
     echo "To start the ejector client, run: "
-    echo "docker run --name \"$RELAY_CONTAINER_NAME\" -d -e KEYSTORE_PASSWORD=\"$KEYSTORE_PASSWORD\" --restart always -v \"$CONFIG_PATH\":/keys ghcr.io/vouchrun/pls-lsd-ejector:main start --base-path /keys --consensus_endpoint \"$CONSENSUS_ENDPOINT\" --execution_endpoint \"$EXECUTION_ENDPOINT\" --withdraw_address \"$WITHDRAW_ADDRESS\""
+    echo "docker run --name ejector -d -e KEYSTORE_PASSWORD=\"$KEYSTORE_PASSWORD\" --restart always -v \"$CONFIG_PATH\":/keys ghcr.io/vouchrun/pls-lsd-ejector:main start --base-path /keys --consensus_endpoint \"$CONSENSUS_ENDPOINT\" --execution_endpoint \"$EXECUTION_ENDPOINT\" --withdraw_address \"$WITHDRAW_ADDRESS\""
 fi
