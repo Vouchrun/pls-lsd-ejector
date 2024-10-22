@@ -28,14 +28,6 @@ if [ -z "${CONFIG_PATH}" ]; then
     CONFIG_PATH="$DEFAULT_CONFIG_PATH"
 fi
 
-mkdir -p "$CONFIG_PATH"
-
-echo ""
-echo -n "Please paste in the contents of your keystore file: "
-read -r KEYSTORE_FILE
-
-echo "$KEYSTORE_FILE" > "$CONFIG_PATH/keys.json"
-
 
 echo ""
 echo -n "Please enter your keystore password (your password won't be displayed as you type): "
@@ -108,7 +100,12 @@ fi
 echo ""
 read -r -p "Start ejector service? (starting now will pass through your key password) [y/n] (press Enter to confirm): " START_SERVICE
 
-if [[ ${START_SERVICE:0:1} =~ ^[Yy]$ ]]; then
+if [[ ${START_SERVICE:0:1} =~ ^[Nn]$ ]]; then
+    echo ""
+    echo ""
+    echo "To start the ejector client, run: "
+    echo "docker run --name ejector -d -e KEYSTORE_PASSWORD=\"$KEYSTORE_PASSWORD\" --restart always -v \"$CONFIG_PATH\":/keys ghcr.io/vouchrun/pls-lsd-ejector:main start --base-path /keys --consensus_endpoint \"$CONSENSUS_ENDPOINT\" --execution_endpoint \"$EXECUTION_ENDPOINT\" --withdraw_address \"$WITHDRAW_ADDRESS\""
+else
     echo -n "Enter a customised container name for the ejector service (default)[ejector]: "
     read -r EJECTOR_CONTAINER_NAME
 
@@ -117,9 +114,4 @@ if [[ ${START_SERVICE:0:1} =~ ^[Yy]$ ]]; then
     fi
 
     docker run --name "$EJECTOR_CONTAINER_NAME" -d -e KEYSTORE_PASSWORD="$KEYSTORE_PASSWORD" --restart always -v "$CONFIG_PATH":/keys ghcr.io/vouchrun/pls-lsd-ejector:main start --base-path /keys --consensus_endpoint "$CONSENSUS_ENDPOINT" --execution_endpoint "$EXECUTION_ENDPOINT" --withdraw_address "$WITHDRAW_ADDRESS"
-else
-    echo ""
-    echo ""
-    echo "To start the ejector client, run: "
-    echo "docker run --name ejector -d -e KEYSTORE_PASSWORD=\"$KEYSTORE_PASSWORD\" --restart always -v \"$CONFIG_PATH\":/keys ghcr.io/vouchrun/pls-lsd-ejector:main start --base-path /keys --consensus_endpoint \"$CONSENSUS_ENDPOINT\" --execution_endpoint \"$EXECUTION_ENDPOINT\" --withdraw_address \"$WITHDRAW_ADDRESS\""
 fi
