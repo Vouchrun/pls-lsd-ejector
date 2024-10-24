@@ -43,7 +43,7 @@ then
 else
     CONSENSUS_ENDPOINT=https://rpc-pulsechain.g4mm4.io/beacon-api
     EXECUTION_ENDPOINT=https://rpc-pulsechain.g4mm4.io
-    WITHDRAW_ADDRESS=0x_NETWORK_WITHDRAW_CONTRACT_ADDR
+    WITHDRAW_ADDRESS=0x1F082785Ca889388Ce523BF3de6781E40b99B060
 fi
 
 
