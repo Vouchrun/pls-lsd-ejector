@@ -7,13 +7,14 @@ To learn more about PLS LSD, see [**PLS LSD Documentation and Guide**](https://v
 ## Quick Install
 
 The below command will:
+
 - Install Docker (if not already installed)
-- Configure ejector directory and keystore
-- Enable automatic OS and ejector updates (optional)
-- Start the Relay docker container
+- Configure ejector directory to point to keystores
+- Enable automatic OS and ejector container updates (optional)
+- Start the ejector docker container the first time
 
 
-Note: this command needs to be run as root.
+**Note: this command needs to be run as root.**
 
 ```bash
 curl -sL https://raw.githubusercontent.com/Vouchrun/pls-lsd-ejector/refs/heads/main/ejector-install.sh > ejector-install.sh; bash ejector-install.sh
