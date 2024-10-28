@@ -17,5 +17,8 @@ The below command will:
 **Note: this command needs to be run as root.**
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Vouchrun/pls-lsd-ejector/refs/heads/main/ejector-install.sh > ejector-install.sh; bash ejector-install.sh
+curl -sL https://raw.githubusercontent.com/Vouchrun/pls-lsd-ejector/refs/heads/main/ejector-install.sh > ejector-install.sh; sudo bash ejector-install.sh
 ```
+
+
+For detailed instructions read the [Ejector Client Documentation](https://vouch.run/docs/validator_guide/ejector_client.html)
