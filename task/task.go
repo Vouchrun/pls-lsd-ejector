@@ -117,13 +117,13 @@ func (task *Task) monitorHandler() {
 		break
 	}
 
+	var i int
 	for {
 		select {
 		case <-task.stop:
 			logrus.Info("task has stopped")
 			return
 		default:
-
 			logrus.Debug("checkCycle start -----------")
 			currentCycle, err := task.withdrawContract.CurrentWithdrawCycle(task.connection.CallOpts(nil))
 			if err != nil {
@@ -152,11 +152,14 @@ func (task *Task) monitorHandler() {
 				time.Sleep(6 * time.Second)
 				continue
 			}
-
 			logrus.Debug("checkNotExitPubkey end -----------")
-
 		}
-
+		if i%60 == 0 { // hourly
+			logrus.Infof("validators report: %d active, %d inactive",
+				len(task.validators),
+				len(task.notExitValidators))
+		}
+		i++
 		time.Sleep(60 * time.Second)
 	}
 }
@@ -252,12 +255,12 @@ func (task *Task) checkNotExitPubkey() error {
 		if err != nil {
 			return err
 		}
-		// will skip if already sign exit
 		if status.Exists {
 			val.ValidatorIndex = status.Index
 			task.validators[status.Index] = val
 
 			delete(task.notExitValidators, key)
+			logrus.Infof("validator %s is active now", pubkey.String())
 		}
 	}
 	return nil
