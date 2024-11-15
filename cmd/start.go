@@ -68,7 +68,7 @@ func startCmd() *cobra.Command {
 				return err
 			}
 			if !common.IsHexAddress(withdrawAddress) {
-				return fmt.Errorf("parse withdraw address failed, address :%s", withdrawAddress)
+				return fmt.Errorf("parse withdraw address failed, address: %s", withdrawAddress)
 			}
 			logLevelStr, err := cmd.Flags().GetString(flagLogLevel)
 			if err != nil {
