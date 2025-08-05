@@ -104,7 +104,7 @@ if [[ ${START_SERVICE:0:1} =~ ^[Nn]$ ]]; then
     echo ""
     echo ""
     echo "To start the ejector client, run: "
-    echo "docker run --name ejector -d -e KEYSTORE_PASSWORD=\"$KEYSTORE_PASSWORD\" --restart always -v \"$CONFIG_PATH\":/keys ghcr.io/vouchrun/pls-lsd-ejector:main start --keys_dir /keys --consensus_endpoint \"$CONSENSUS_ENDPOINT\" --execution_endpoint \"$EXECUTION_ENDPOINT\" --withdraw_address \"$WITHDRAW_ADDRESS\""
+    echo "docker run --name ejector -d -e KEYSTORE_PASSWORD=\"$KEYSTORE_PASSWORD\" --restart unless-stopped --network host -v \"$CONFIG_PATH\":/keys ghcr.io/vouchrun/pls-lsd-ejector:main start --keys_dir /keys --consensus_endpoint \"$CONSENSUS_ENDPOINT\" --execution_endpoint \"$EXECUTION_ENDPOINT\" --withdraw_address \"$WITHDRAW_ADDRESS\""
 else
     echo -n "Enter a customised container name for the ejector service (default)[ejector]: "
     read -r EJECTOR_CONTAINER_NAME
