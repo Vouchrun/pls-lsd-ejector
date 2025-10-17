@@ -381,7 +381,7 @@ CONFIG_PATH="$CONFIG_PATH"
 
 # Verify password file exists
 if [ ! -f "\$PASSWORD_FILE" ]; then
-    echo -e "ERROR: Password file not found at \$PASSWORD_FILE"
+    echo "ERROR: Password file not found at \$PASSWORD_FILE"
     echo "Please ensure your password file is in place before starting"
     exit 1
 fi
