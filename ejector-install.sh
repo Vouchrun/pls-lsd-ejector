@@ -13,6 +13,21 @@ fi
 
 set -euo pipefail
 
+# DOCKER INSTALLATION CHECK - MOVED TO START
+# This must happen before any Docker commands (including swarm init)
+if ! docker --version >/dev/null 2>&1; then
+    echo "Docker not found. Installing Docker..."
+    apt-get update -qq
+    apt-get install -y -qq ca-certificates curl gnupg
+    install -m 0755 -d /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    chmod a+r /etc/apt/keyrings/docker.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    apt-get -qq update
+    apt-get -qq install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    echo -e "\033[1;32m✓ Docker installed successfully\033[0m"
+fi
+
 # NETWORK SELECTION
 echo ""
 read -r -p "Use Mainnet or Testnet settings [Main/Test] (default: Main): " NETWORK_TYPE
@@ -223,8 +238,32 @@ if [ "$PASSWORD_OPTION" -eq 1 ]; then
                     echo ""
                     echo -e "\033[1;33mSECURITY NOTICE:\033[0m"
                     echo "Your password file still exists at: $PASSWORD_FILE"
-                    echo "You may want to securely delete it after verifying the container works:"
-                    echo "  shred -vfz -n 10 $PASSWORD_FILE"
+                    echo "For enhanced security, this file should be securely deleted now that the secret is created."
+                    echo ""
+                    read -r -p "Securely delete password file now? [Y/n]: " DELETE_PASSWORD_FILE
+                    DELETE_PASSWORD_FILE="${DELETE_PASSWORD_FILE:-y}"
+                    
+                    if [[ ${DELETE_PASSWORD_FILE:0:1} =~ ^[Yy]$ ]]; then
+                        if command -v shred >/dev/null 2>&1; then
+                            shred -vfz -n 10 "$PASSWORD_FILE" 2>/dev/null && {
+                                echo -e "\033[1;32m✓\033[0m Password file securely deleted"
+                            } || {
+                                echo -e "\033[1;31mERROR:\033[0m Failed to securely delete password file"
+                                echo "You may need to manually delete: $PASSWORD_FILE"
+                            }
+                        else
+                            # Fallback if shred is not available
+                            rm -f "$PASSWORD_FILE" && {
+                                echo -e "\033[1;32m✓\033[0m Password file deleted (shred not available, used rm)"
+                                echo -e "\033[1;33mNote:\033[0m For maximum security, install 'shred' utility"
+                            } || {
+                                echo -e "\033[1;31mERROR:\033[0m Failed to delete password file"
+                            }
+                        fi
+                    else
+                        echo "Password file retained at: $PASSWORD_FILE"
+                        echo "You can manually delete it later with: shred -vfz -n 10 $PASSWORD_FILE"
+                    fi
                 fi
             fi
         fi
@@ -250,18 +289,7 @@ else
 fi
 
 # PERMISSIONS & DEPENDENCIES
-chown -R 65532:65532 "$CONFIG_PATH"  # INCLUDES PASSWORD FILE
-
-if ! docker --version >/dev/null; then
-    apt-get update -qq
-    apt-get install -y -qq ca-certificates curl gnupg
-    install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    chmod a+r /etc/apt/keyrings/docker.gpg
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    apt-get -qq update
-    apt-get -qq install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-fi
+chown -R 65532:65532 "$CONFIG_PATH"  # INCLUDES PASSWORD FILE (if it still exists)
 
 # CONTAINER NAME
 CONTAINER_NAME="ejector"
