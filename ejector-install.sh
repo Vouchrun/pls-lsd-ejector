@@ -211,6 +211,7 @@ if [ "$PASSWORD_OPTION" -eq 1 ]; then
                 echo -e "\033[1;33mWARNING:\033[0m Docker secret '$SECRET_NAME' already exists"
                 read -r -p "Remove and recreate secret? [y/N]: " RECREATE_SECRET
                 if [[ ${RECREATE_SECRET:0:1} =~ ^[Yy]$ ]]; then
+                    docker service scale ejector=0 && sleep 5 && docker service rm ejector
                     docker secret rm "$SECRET_NAME" 2>/dev/null || {
                         echo -e "\033[1;31mERROR:\033[0m Could not remove existing secret"
                         echo "Secret may be in use by running services"
@@ -348,10 +349,13 @@ if ! docker secret ls | grep -q "$SECRET_NAME"; then
 fi
 
 # Clean up any existing service
+# FORCE STOP SERVICE - Nuclear option
 if docker service ls --format '{{.Name}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "Removing existing service..."
-    docker service rm "$CONTAINER_NAME" &>/dev/null || true
-    sleep 3
+    echo "Force stopping service '$CONTAINER_NAME'..."
+    
+    docker service scale ejector=0 && sleep 5 && docker service rm ejector
+    
+    echo -e "\033[1;32m✓ Service removed successfully\033[0m"
 fi
 
 # EJECTOR - DOCKER SERVICE STARTUP CONFIG - DOCKER SECRET MODE
@@ -571,10 +575,10 @@ if [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
         
         if $USE_DOCKER_SECRET; then
             # Clean up any existing service
+            # FORCE STOP SERVICE - Nuclear option
             if docker service ls --format '{{.Name}}' | grep -q "^${CONTAINER_NAME}$"; then
-                echo "Removing existing service..."
-                docker service rm "$CONTAINER_NAME" &>/dev/null || true
-                sleep 3
+                docker service scale ejector=0 && sleep 5 && docker service rm ejector
+                echo -e "\033[1;32m✓ Service removed successfully\033[0m"
             fi
 
             # Start service with Docker Secret
