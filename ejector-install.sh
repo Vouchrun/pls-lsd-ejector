@@ -14,7 +14,7 @@ fi
 set -euo pipefail
 
 # DOCKER INSTALLATION CHECK - MOVED TO START
-# This must happen before any Docker commands (including swarm init)
+# This must happen before any Docker commands
 if ! docker --version >/dev/null 2>&1; then
     echo "Docker not found. Installing Docker..."
     apt-get update -qq
@@ -63,19 +63,16 @@ fi
 # PASSWORD OPTION SELECTION
 echo ""
 echo "Select Start Up option:"
-echo "1. Detached mode (Supports "auto-restart"): Uses Docker Secrets or Password File"
+echo "1. Detached mode (Supports "auto-restart"): Uses Password File"
 echo "2. Interactive mode (enter password at startup)"
 read -r -p "Enter option [1/2]: " PASSWORD_OPTION
 PASSWORD_OPTION="${PASSWORD_OPTION:-1}"
-
-USE_DOCKER_SECRET=false
-SECRET_NAME="keystore_password"
 
 if [ "$PASSWORD_OPTION" -eq 1 ]; then
     # PASSWORD FILE SETUP
     echo ""
     echo "Detached mode Setup"
-    echo "Creating Temp Password File (secrets or password selection will follow)"
+    echo "Creating Password File for detached operation"
     echo ""
     PASSWORD_FILE_DEFAULT="$CONFIG_PATH/keystore.pwd"
     read -e -r -p "Enter password file path (default)[$PASSWORD_FILE_DEFAULT]: " PASSWORD_FILE
@@ -173,111 +170,6 @@ if [ "$PASSWORD_OPTION" -eq 1 ]; then
         chown 65532:65532 "$PASSWORD_FILE"  # MATCH CONTAINER UID
         unset PASS1 PASS2
     fi
-
-    echo ""
-    echo "The ejector can be started in Detached Mode using TWO password methods..."
-    echo "1. Docker Secrets - Most secure (recommended for production)"
-    echo "2. Mounted Password File - Less secure (not recommended for production)"
-    echo ""
-    read -r -p "Would you like to use Docker Secret instead of password file? [Y/n]: " USE_SECRET_INPUT
-    USE_SECRET_INPUT="${USE_SECRET_INPUT:-y}"
-
-    if [[ ${USE_SECRET_INPUT:0:1} =~ ^[Yy]$ ]]; then
-        USE_DOCKER_SECRET=true
-        
-        # Check if swarm is initialized
-        if [ "$(docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null)" != "active" ]; then
-            echo ""
-            echo "Docker Swarm is not initialized. Initializing single-node swarm..."
-            docker swarm init 2>/dev/null || {
-                echo -e "\033[1;33mWARNING:\033[0m Could not initialize swarm automatically"
-                read -r -p "Initialize Docker Swarm manually? [Y/n]: " INIT_SWARM
-                INIT_SWARM="${INIT_SWARM:-y}"
-                if [[ ${INIT_SWARM:0:1} =~ ^[Yy]$ ]]; then
-                    docker swarm init || {
-                        echo -e "\033[1;31mERROR:\033[0m Failed to initialize Docker Swarm"
-                        echo "Falling back to password file method"
-                        USE_DOCKER_SECRET=false
-                    }
-                else
-                    echo "Falling back to password file method"
-                    USE_DOCKER_SECRET=false
-                fi
-            }
-            
-            if $USE_DOCKER_SECRET; then
-                echo -e "\033[1;32m✓\033[0m Docker Swarm initialized successfully"
-            fi
-        fi
-
-        if $USE_DOCKER_SECRET; then
-            # Check if secret already exists
-            if docker secret ls | grep -q "$SECRET_NAME"; then
-                echo ""
-                echo -e "\033[1;33mWARNING:\033[0m Docker secret '$SECRET_NAME' already exists"
-                read -r -p "Remove and recreate secret? [y/N]: " RECREATE_SECRET
-                if [[ ${RECREATE_SECRET:0:1} =~ ^[Yy]$ ]]; then
-                    docker service scale ejector=0 && sleep 5 && docker service rm ejector
-                    docker secret rm "$SECRET_NAME" 2>/dev/null || {
-                        echo -e "\033[1;31mERROR:\033[0m Could not remove existing secret"
-                        echo "Secret may be in use by running services"
-                        read -r -p "Continue with existing secret? [Y/n]: " USE_EXISTING
-                        USE_EXISTING="${USE_EXISTING:-y}"
-                        if [[ ! ${USE_EXISTING:0:1} =~ ^[Yy]$ ]]; then
-                            echo "Falling back to password file method"
-                            USE_DOCKER_SECRET=false
-                        fi
-                    }
-                fi
-            fi
-
-            # Create secret if needed
-            if $USE_DOCKER_SECRET && ! docker secret ls | grep -q "$SECRET_NAME"; then
-                echo "Creating Docker secret '$SECRET_NAME' from password file..."
-                docker secret create "$SECRET_NAME" "$PASSWORD_FILE" || {
-                    echo -e "\033[1;31mERROR:\033[0m Failed to create Docker secret"
-                    echo "Falling back to password file method"
-                    USE_DOCKER_SECRET=false
-                }
-                
-                if $USE_DOCKER_SECRET; then
-                    echo -e "\033[1;32m✓\033[0m Docker secret created successfully"
-                    echo ""
-                    echo -e "\033[1;33mSECURITY NOTICE:\033[0m"
-                    echo "Your password file still exists at: $PASSWORD_FILE"
-                    echo "For enhanced security, this file should be securely deleted now that the secret is created."
-                    echo ""
-                    read -r -p "Securely delete password file now? [Y/n]: " DELETE_PASSWORD_FILE
-                    DELETE_PASSWORD_FILE="${DELETE_PASSWORD_FILE:-y}"
-                    
-                    if [[ ${DELETE_PASSWORD_FILE:0:1} =~ ^[Yy]$ ]]; then
-                        if command -v shred >/dev/null 2>&1; then
-                            shred -vfz -n 10 "$PASSWORD_FILE" 2>/dev/null && {
-                                echo -e "\033[1;32m✓\033[0m Password file securely deleted"
-                            } || {
-                                echo -e "\033[1;31mERROR:\033[0m Failed to securely delete password file"
-                                echo "You may need to manually delete: $PASSWORD_FILE"
-                            }
-                        else
-                            # Fallback if shred is not available
-                            rm -f "$PASSWORD_FILE" && {
-                                echo -e "\033[1;32m✓\033[0m Password file deleted (shred not available, used rm)"
-                                echo -e "\033[1;33mNote:\033[0m For maximum security, install 'shred' utility"
-                            } || {
-                                echo -e "\033[1;31mERROR:\033[0m Failed to delete password file"
-                            }
-                        fi
-                    else
-                        echo "Password file retained at: $PASSWORD_FILE"
-                        echo "You can manually delete it later with: shred -vfz -n 10 $PASSWORD_FILE"
-                    fi
-                fi
-            fi
-        fi
-    else
-        echo "Using traditional password file method"
-        USE_DOCKER_SECRET=false
-    fi
 else
     # Option 2: Just note the selection - we'll handle it at the end
     echo "Interactive mode selected. Container will start after all configuration is complete."
@@ -326,90 +218,8 @@ if [[ ${CREATE_SCRIPT:0:1} =~ ^[Yy]$ ]]; then
 
     if $CREATE_FILE; then
         if [ "$PASSWORD_OPTION" -eq 1 ]; then
-            # Generate Option 1 startup script (password file or Docker secret)
-            if $USE_DOCKER_SECRET; then
-    cat > "$SCRIPT_PATH" << EOF
-#!/bin/bash
-# Ejector start script - Generated by installation script - Docker Secret Mode
-
-CONTAINER_NAME="$CONTAINER_NAME"
-SECRET_NAME="$SECRET_NAME"
-CONFIG_PATH="$CONFIG_PATH"
-CONSENSUS_ENDPOINT="$CONSENSUS_ENDPOINT"
-EXECUTION_ENDPOINT="$EXECUTION_ENDPOINT"
-WITHDRAW_ADDRESS="$WITHDRAW_ADDRESS"
-
-# Verify Docker Swarm is active
-if [ "\$(docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null)" != "active" ]; then
-    echo -e "\033[1;31mERROR: Docker Swarm is not active\033[0m"
-    echo "Initialize swarm with: docker swarm init"
-    exit 1
-fi
-
-# Verify secret exists
-if ! docker secret ls | grep -q "$SECRET_NAME"; then
-    echo -e "\033[1;31mERROR: Docker secret '$SECRET_NAME' not found\033[0m"
-    echo "Available secrets:"
-    docker secret ls
-    exit 1
-fi
-
-# Clean up any existing service
-# FORCE STOP SERVICE - Nuclear option
-if docker service ls --format '{{.Name}}' | grep -q "^${CONTAINER_NAME}$"; then
-    echo "Force stopping service '$CONTAINER_NAME'..."
-    
-    docker service scale ejector=0 && sleep 5 && docker service rm ejector
-    
-    echo -e "\033[1;32m✓ Service removed successfully\033[0m"
-fi
-
-# EJECTOR - DOCKER SERVICE STARTUP CONFIG - DOCKER SECRET MODE
-docker service create \\
-    --name "$CONTAINER_NAME" \\
-    --restart-condition any \\
-    --network host \\
-    --mount type=bind,source="$CONFIG_PATH",target=/keys \\
-    --secret "$SECRET_NAME" \\
-    ghcr.io/vouchrun/pls-lsd-ejector:staging \\
-    start \\
-    --consensus_endpoint "$CONSENSUS_ENDPOINT" \\
-    --execution_endpoint "$EXECUTION_ENDPOINT" \\
-    --keys_dir /keys \\
-    --withdraw_address "$WITHDRAW_ADDRESS"
-# EJECTOR - DOCKER SERVICE STARTUP CONFIG - END HERE
-
-# Wait for service to start
-echo "Waiting for service to start..."
-sleep 5
-
-# Verify service is running
-SERVICE_STATE=\$(docker service ps "$CONTAINER_NAME" --format '{{.CurrentState}}' 2>/dev/null | head -n1)
-if [[ ! "\$SERVICE_STATE" =~ Running ]]; then
-    echo -e "\033[1;31mERROR: Failed to start service!\033[0m"
-    echo "Service status:"
-    docker service ps "$CONTAINER_NAME" --no-trunc
-    echo ""
-    echo "Check logs with: docker service logs $CONTAINER_NAME"
-    exit 1
-fi
-
-echo -e "\033[1;32m✓ Service started successfully (using Docker Secret)\033[0m"
-
-# LOG MONITORING (only if running interactively)
-if [ -t 0 ]; then
-    echo ""
-    read -r -p "Monitor service logs? [Y/n]: " MONITOR_LOGS
-    MONITOR_LOGS="\${MONITOR_LOGS:-y}"
-    if [[ \${MONITOR_LOGS:0:1} =~ ^[Yy]$ ]]; then
-        echo -e "\n\033[1;32mMonitoring logs for service '$CONTAINER_NAME'...\033[0m"
-        echo -e "Press CTRL+C to exit log monitoring\n"
-        docker service logs -f --tail=100 "$CONTAINER_NAME"
-    fi
-fi
-EOF
-            else
-                cat > "$SCRIPT_PATH" << EOF
+            # Generate Option 1 startup script (password file)
+            cat > "$SCRIPT_PATH" << EOF
 #!/bin/bash
 # Ejector start script - Generated by installation script - Password File Mode
 
@@ -462,7 +272,6 @@ if [ -t 0 ]; then
     fi
 fi
 EOF
-            fi
         else
             # Generate Option 2 startup script (interactive mode)
             cat > "$SCRIPT_PATH" << EOF
@@ -508,11 +317,7 @@ EOF
 
         # SECURITY VERIFICATION
         if [ "$PASSWORD_OPTION" -eq 1 ]; then
-            if $USE_DOCKER_SECRET; then
-                echo -e "\033[1;32m✓\033[0m Start script configured with Docker Secret (enhanced security)"
-            else
-                echo -e "\033[1;32m✓\033[0m Start script configured with password file mount (no ENV exposure)"
-            fi
+            echo -e "\033[1;32m✓\033[0m Start script configured with password file mount (no ENV exposure)"
         else
             echo -e "\033[1;32m✓\033[0m Interactive start script created successfully"
         fi
@@ -543,13 +348,8 @@ echo -e "    Execution Endpoint: \033[1;36m$EXECUTION_ENDPOINT\033[0m"
 echo -e "    Withdraw Address: \033[1;36m$WITHDRAW_ADDRESS\033[0m"
 
 if [ "$PASSWORD_OPTION" -eq 1 ]; then
-    if $USE_DOCKER_SECRET; then
-        echo -e "    Password Method: \033[1;36mDocker Secret (Enhanced Security)\033[0m"
-        echo -e "    Secret Name: \033[1;36m$SECRET_NAME\033[0m"
-    else
-        echo -e "    Password Method: \033[1;36mPassword File\033[0m"
-        echo -e "    Password File: \033[1;36m$PASSWORD_FILE\033[0m"
-    fi
+    echo -e "    Password Method: \033[1;36mPassword File\033[0m"
+    echo -e "    Password File: \033[1;36m$PASSWORD_FILE\033[0m"
     echo -e "    Container Name: \033[1;36m$CONTAINER_NAME\033[0m"
 else
     echo -e "    Password Option: \033[1;36mInteractive mode\033[0m"
@@ -577,99 +377,53 @@ START_CLIENT="${START_CLIENT:-y}"
 
 if [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
     if [ "$PASSWORD_OPTION" -eq 1 ]; then
-        # START SERVICE FOR OPTION 1 (PASSWORD FILE OR DOCKER SECRET)
+        # START SERVICE FOR OPTION 1 (PASSWORD FILE)
         
-        if $USE_DOCKER_SECRET; then
-            # Clean up any existing service
-            # FORCE STOP SERVICE - Nuclear option
-            if docker service ls --format '{{.Name}}' | grep -q "^${CONTAINER_NAME}$"; then
-                docker service scale ejector=0 && sleep 5 && docker service rm ejector
-                echo -e "\033[1;32m✓ Service removed successfully\033[0m"
-            fi
-
-            # Start service with Docker Secret
-            SERVICE_ID=$(docker service create \
-                --name "$CONTAINER_NAME" \
-                --restart-condition any \
-                --network host \
-                --mount type=bind,source="$CONFIG_PATH",target=/keys \
-                --secret "$SECRET_NAME" \
-                ghcr.io/vouchrun/pls-lsd-ejector:staging \
-                start \
-                --consensus_endpoint "$CONSENSUS_ENDPOINT" \
-                --execution_endpoint "$EXECUTION_ENDPOINT" \
-                --keys_dir /keys \
-                --withdraw_address "$WITHDRAW_ADDRESS")
-            
-            # Wait for service to be running
-            echo "Waiting for service to start..."
-            sleep 5
-            
-            # Verify service is running
-            SERVICE_STATE=$(docker service ps "$CONTAINER_NAME" --format '{{.CurrentState}}' 2>/dev/null | head -n1)
-            if [[ ! "$SERVICE_STATE" =~ Running ]]; then
-                echo -e "\033[1;31mERROR: Service failed to start!\033[0m"
-                echo "Service status:"
-                docker service ps "$CONTAINER_NAME" --no-trunc
-                echo ""
-                echo "Check logs with:"
-                echo "docker service logs $CONTAINER_NAME"
-                echo -e "\033[1;33mTIP: Common issues:\033[0m"
-                echo "  • Docker Swarm not active"
-                echo "  • Secret not created properly"
-                echo "  • Port already in use"
-                exit 1
-            fi
-            
-            echo -e "\033[1;32m✓ Service started successfully using Docker Secret\033[0m (Service ID: $SERVICE_ID)"
-            
-        else
-            # Clean up any existing container
-            if docker inspect "$CONTAINER_NAME" &>/dev/null; then
-                docker stop "$CONTAINER_NAME" &>/dev/null || true
-                docker rm "$CONTAINER_NAME" &>/dev/null || true
-            fi
-
-            # Start container with password file mount
-            CONTAINER_ID=$(docker run --pull always --name "$CONTAINER_NAME" -d \
-                --restart unless-stopped \
-                --network host \
-                -v "$CONFIG_PATH":/keys \
-                -v "$PASSWORD_FILE":/run/secrets/keystore_password:ro \
-                ghcr.io/vouchrun/pls-lsd-ejector:staging \
-                start \
-                --consensus_endpoint "$CONSENSUS_ENDPOINT" \
-                --execution_endpoint "$EXECUTION_ENDPOINT" \
-                --keys_dir /keys \
-                --withdraw_address "$WITHDRAW_ADDRESS")
-            
-            # CORRECT VERIFICATION (checks actual container state)
-            sleep 5
-
-            # Check if container is running
-            if ! docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep -q "true"; then
-                echo -e "\033[1;31mERROR: Container failed to start!\033[0m"
-                echo "Container status:"
-                docker ps -a --filter "name=$CONTAINER_NAME"
-                echo ""
-                echo "Check logs with:"
-                echo "docker logs $CONTAINER_NAME"
-                echo -e "\033[1;33mTIP: Common issues:\033[0m"
-                echo "  • Password file not readable by container (UID 65532)"
-                echo "  • Password contains special characters"
-                exit 1
-            fi
-
-            # Verify we see validator processing in logs
-            if ! docker logs "$CONTAINER_NAME" 2>&1 | grep -q "validator"; then
-                echo -e "\033[1;33mWARNING:\033[0m Container is running but no validator processing detected"
-                echo "This might be normal if no validators need processing"
-            else
-                echo -e "\033[1;32m✓\033[0m Detected validator processing in logs"
-            fi
-
-            echo -e "\033[1;32m✓ Service started successfully using password file\033[0m (Container ID: $CONTAINER_ID)"
+        # Clean up any existing container
+        if docker inspect "$CONTAINER_NAME" &>/dev/null; then
+            docker stop "$CONTAINER_NAME" &>/dev/null || true
+            docker rm "$CONTAINER_NAME" &>/dev/null || true
         fi
+
+        # Start container with password file mount
+        CONTAINER_ID=$(docker run --pull always --name "$CONTAINER_NAME" -d \
+            --restart unless-stopped \
+            --network host \
+            -v "$CONFIG_PATH":/keys \
+            -v "$PASSWORD_FILE":/run/secrets/keystore_password:ro \
+            ghcr.io/vouchrun/pls-lsd-ejector:staging \
+            start \
+            --consensus_endpoint "$CONSENSUS_ENDPOINT" \
+            --execution_endpoint "$EXECUTION_ENDPOINT" \
+            --keys_dir /keys \
+            --withdraw_address "$WITHDRAW_ADDRESS")
+        
+        # CORRECT VERIFICATION (checks actual container state)
+        sleep 5
+
+        # Check if container is running
+        if ! docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null | grep -q "true"; then
+            echo -e "\033[1;31mERROR: Container failed to start!\033[0m"
+            echo "Container status:"
+            docker ps -a --filter "name=$CONTAINER_NAME"
+            echo ""
+            echo "Check logs with:"
+            echo "docker logs $CONTAINER_NAME"
+            echo -e "\033[1;33mTIP: Common issues:\033[0m"
+            echo "  • Password file not readable by container (UID 65532)"
+            echo "  • Password contains special characters"
+            exit 1
+        fi
+
+        # Verify we see validator processing in logs
+        if ! docker logs "$CONTAINER_NAME" 2>&1 | grep -q "validator"; then
+            echo -e "\033[1;33mWARNING:\033[0m Container is running but no validator processing detected"
+            echo "This might be normal if no validators need processing"
+        else
+            echo -e "\033[1;32m✓\033[0m Detected validator processing in logs"
+        fi
+
+        echo -e "\033[1;32m✓ Service started successfully using password file\033[0m (Container ID: $CONTAINER_ID)"
     else
         # START SERVICE FOR OPTION 2 (INTERACTIVE MODE)
         echo -e "\n\n\033[1;37;41m###################################################################\033[0m"
@@ -702,12 +456,7 @@ if [ "$PASSWORD_OPTION" -eq 1 ] && [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
     echo -e "\033[1;34m#                LOG MONITORING OPTION                        #\033[0m"
     echo -e "\033[1;34m###############################################################\033[0m"
     
-    if $USE_DOCKER_SECRET; then
-        echo -e "You can now monitor your service logs to verify validator operation."
-    else
-        echo -e "You can now monitor your container logs to verify validator operation."
-    fi
-    
+    echo -e "You can now monitor your container logs to verify validator operation."
     echo -e "This will show the last 100 lines and continue streaming new logs."
     echo -e "Press \033[1;36mCTRL+C\033[0m to exit log monitoring at any time."
 
@@ -716,14 +465,8 @@ if [ "$PASSWORD_OPTION" -eq 1 ] && [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
     MONITOR_LOGS="${MONITOR_LOGS:-y}"
 
     if [[ ${MONITOR_LOGS:0:1} =~ ^[Yy]$ ]]; then
-        if $USE_DOCKER_SECRET; then
-            echo -e "\n\033[1;32mMonitoring logs for service '$CONTAINER_NAME'...\033[0m"
-            echo -e "Press CTRL+C to exit log monitoring\n"
-            docker service logs -f --tail=100 "$CONTAINER_NAME"
-        else
-            echo -e "\n\033[1;32mMonitoring logs for container '$CONTAINER_NAME'...\033[0m"
-            echo -e "Press CTRL+C to exit log monitoring\n"
-            docker logs -f --tail=100 "$CONTAINER_NAME"
-        fi
+        echo -e "\n\033[1;32mMonitoring logs for container '$CONTAINER_NAME'...\033[0m"
+        echo -e "Press CTRL+C to exit log monitoring\n"
+        docker logs -f --tail=100 "$CONTAINER_NAME"
     fi
 fi
