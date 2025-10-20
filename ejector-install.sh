@@ -175,7 +175,7 @@ if [ "$PASSWORD_OPTION" -eq 1 ]; then
     fi
 
     echo ""
-    echo "The ejector can be started using two password methods..."
+    echo "The ejector can be started in Detached Mode using TWO password methods..."
     echo "1. Docker Secrets - Most secure (recommended for production)"
     echo "2. Mounted Password File - Less secure (not recommended for production)"
     echo ""
