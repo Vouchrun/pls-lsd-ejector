@@ -62,9 +62,9 @@ fi
 
 # PASSWORD OPTION SELECTION
 echo ""
-echo "Select password option:"
-echo "1. Start in detached mode: Use local password file (Less Secure - Supports Auto Restart)"
-echo "2. Start in interactive mode (More Secure - enter password at startup)"
+echo "Select Start Up option:"
+echo "1. Detached mode (Supports "restart always"): Uses Docker Secrets or Password File"
+echo "2. Interactive mode (enter password at startup)"
 read -r -p "Enter option [1/2]: " PASSWORD_OPTION
 PASSWORD_OPTION="${PASSWORD_OPTION:-1}"
 
@@ -74,7 +74,9 @@ SECRET_NAME="keystore_password"
 if [ "$PASSWORD_OPTION" -eq 1 ]; then
     # PASSWORD FILE SETUP
     echo ""
-    echo "Password file setup (REQUIRED for production):"
+    echo "Detached mode Setup"
+    echo "Creating Temp Password File (secrets or password selection will follow)"
+    echo ""
     PASSWORD_FILE_DEFAULT="$CONFIG_PATH/keystore.pwd"
     read -e -r -p "Enter password file path (default)[$PASSWORD_FILE_DEFAULT]: " PASSWORD_FILE
     PASSWORD_FILE="${PASSWORD_FILE:-$PASSWORD_FILE_DEFAULT}"
@@ -172,6 +174,10 @@ if [ "$PASSWORD_OPTION" -eq 1 ]; then
         unset PASS1 PASS2
     fi
 
+    echo ""
+    echo "The ejector can be started using two password methods..."
+    echo "1. Docker Secrets - Most secure (recommended for production)"
+    echo "2. Mounted Password File - Less secure (not recommended for production)"
     echo ""
     read -r -p "Would you like to use Docker Secret instead of password file? [Y/n]: " USE_SECRET_INPUT
     USE_SECRET_INPUT="${USE_SECRET_INPUT:-y}"
