@@ -286,6 +286,7 @@ fi
 cd "\$(dirname "\$COMPOSE_FILE")"
 
 # Stop and remove existing container
+docker rm ejector 2>/dev/null || true
 docker compose down
 
 # Start with docker compose
@@ -483,6 +484,7 @@ if [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
         cd "$(dirname "$COMPOSE_FILE")"
         
         # Stop any existing container
+        docker rm ejector 2>/dev/null || true
         docker compose down 2>/dev/null || true
         
         # Start with docker compose
