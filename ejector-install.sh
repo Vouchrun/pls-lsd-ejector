@@ -222,7 +222,7 @@ if [ "$PASSWORD_OPTION" -eq 3 ]; then
         cat > "$COMPOSE_FILE" << EOF
 services:
   $CONTAINER_NAME:
-    image: venugopalhegde/pls-lsd-ejector:v4
+    image: ghcr.io/vouchrun/pls-lsd-ejector:staging
     container_name: $CONTAINER_NAME
     restart: unless-stopped
     network_mode: host
@@ -333,7 +333,7 @@ docker run --pull always --name "$CONTAINER_NAME" -d \
     --network host \
     -v "$CONFIG_PATH":/keys \
     -v "\$PASSWORD_FILE":/run/secrets/keystore_password:ro \
-    venugopalhegde/pls-lsd-ejector:v4 \
+    ghcr.io/vouchrun/pls-lsd-ejector:staging \
     start \\
     --consensus_endpoint "$CONSENSUS_ENDPOINT" \
     --execution_endpoint "$EXECUTION_ENDPOINT" \
@@ -389,7 +389,7 @@ docker run --pull always --name "$CONTAINER_NAME" -it \
     --restart unless-stopped \
     --network host \
     -v "$CONFIG_PATH":/keys \
-    venugopalhegde/pls-lsd-ejector:v4 \
+    ghcr.io/vouchrun/pls-lsd-ejector:staging \
     start \
     --consensus_endpoint "$CONSENSUS_ENDPOINT" \
     --execution_endpoint "$EXECUTION_ENDPOINT" \
@@ -521,7 +521,7 @@ if [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
             --network host \
             -v "$CONFIG_PATH":/keys \
             -v "$PASSWORD_FILE":/run/secrets/keystore_password:ro \
-            venugopalhegde/pls-lsd-ejector:v4 \
+            ghcr.io/vouchrun/pls-lsd-ejector:staging \
             start \
             --consensus_endpoint "$CONSENSUS_ENDPOINT" \
             --execution_endpoint "$EXECUTION_ENDPOINT" \
@@ -571,7 +571,7 @@ if [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
             --restart unless-stopped \
             --network host \
             -v "$CONFIG_PATH":/keys \
-            venugopalhegde/pls-lsd-ejector:v4 \
+            ghcr.io/vouchrun/pls-lsd-ejector:staging \
             start \
             --consensus_endpoint "$CONSENSUS_ENDPOINT" \
             --execution_endpoint "$EXECUTION_ENDPOINT" \
