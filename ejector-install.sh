@@ -365,7 +365,7 @@ docker service create \\
     --network host \\
     --mount type=bind,source="$CONFIG_PATH",target=/keys \\
     --secret "$SECRET_NAME" \\
-    ghcr.io/vouchrun/pls-lsd-ejector:main \\
+    ghcr.io/vouchrun/pls-lsd-ejector:staging \\
     start \\
     --consensus_endpoint "$CONSENSUS_ENDPOINT" \\
     --execution_endpoint "$EXECUTION_ENDPOINT" \\
@@ -427,7 +427,7 @@ docker run --pull always --name "$CONTAINER_NAME" -d \
     --network host \
     -v "$CONFIG_PATH":/keys \
     -v "\$PASSWORD_FILE":/run/secrets/keystore_password:ro \
-    ghcr.io/vouchrun/pls-lsd-ejector:main \
+    ghcr.io/vouchrun/pls-lsd-ejector:staging \
     start \\
     --consensus_endpoint "$CONSENSUS_ENDPOINT" \
     --execution_endpoint "$EXECUTION_ENDPOINT" \
@@ -484,7 +484,7 @@ docker run --pull always --name "$CONTAINER_NAME" -it \
     --restart unless-stopped \
     --network host \
     -v "$CONFIG_PATH":/keys \
-    ghcr.io/vouchrun/pls-lsd-ejector:main \
+    ghcr.io/vouchrun/pls-lsd-ejector:staging \
     start \
     --consensus_endpoint "$CONSENSUS_ENDPOINT" \
     --execution_endpoint "$EXECUTION_ENDPOINT" \
@@ -588,7 +588,7 @@ if [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
                 --network host \
                 --mount type=bind,source="$CONFIG_PATH",target=/keys \
                 --secret "$SECRET_NAME" \
-                ghcr.io/vouchrun/pls-lsd-ejector:main \
+                ghcr.io/vouchrun/pls-lsd-ejector:staging \
                 start \
                 --consensus_endpoint "$CONSENSUS_ENDPOINT" \
                 --execution_endpoint "$EXECUTION_ENDPOINT" \
@@ -630,7 +630,7 @@ if [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
                 --network host \
                 -v "$CONFIG_PATH":/keys \
                 -v "$PASSWORD_FILE":/run/secrets/keystore_password:ro \
-                ghcr.io/vouchrun/pls-lsd-ejector:main \
+                ghcr.io/vouchrun/pls-lsd-ejector:staging \
                 start \
                 --consensus_endpoint "$CONSENSUS_ENDPOINT" \
                 --execution_endpoint "$EXECUTION_ENDPOINT" \
@@ -681,7 +681,7 @@ if [[ ${START_CLIENT:0:1} =~ ^[Yy]$ ]]; then
             --restart unless-stopped \
             --network host \
             -v "$CONFIG_PATH":/keys \
-            ghcr.io/vouchrun/pls-lsd-ejector:main \
+            ghcr.io/vouchrun/pls-lsd-ejector:staging \
             start \
             --consensus_endpoint "$CONSENSUS_ENDPOINT" \
             --execution_endpoint "$EXECUTION_ENDPOINT" \
