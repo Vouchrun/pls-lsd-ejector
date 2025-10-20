@@ -63,7 +63,7 @@ fi
 # PASSWORD OPTION SELECTION
 echo ""
 echo "Select Start Up option:"
-echo "1. Detached mode (Supports "restart always"): Uses Docker Secrets or Password File"
+echo "1. Detached mode (Supports "auto-restart"): Uses Docker Secrets or Password File"
 echo "2. Interactive mode (enter password at startup)"
 read -r -p "Enter option [1/2]: " PASSWORD_OPTION
 PASSWORD_OPTION="${PASSWORD_OPTION:-1}"
