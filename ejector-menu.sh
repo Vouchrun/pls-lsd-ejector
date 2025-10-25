@@ -109,7 +109,7 @@ interactive_start() {
     --restart unless-stopped \
     --network host \
     -v "$CONFIGPATH":/keys \
-    venugopalhegde/pls-lsd-ejector:v5 start \
+    ghcr.io/vouchrun/pls-lsd-ejector:staging start \
       --consensus_endpoint "$CONSENSUSENDPOINT" \
       --execution_endpoint "$EXECUTIONENDPOINT" \
       --keys_dir /keys \
@@ -219,7 +219,7 @@ detached_start() {
     --network host \
     --mount type=bind,source="$CONFIGPATH",target=/keys \
     --secret "$SECRETNAME" \
-    venugopalhegde/pls-lsd-ejector:v5 start \
+    ghcr.io/vouchrun/pls-lsd-ejector:staging start \
     --consensus_endpoint "$CONSENSUSENDPOINT" \
     --execution_endpoint "$EXECUTIONENDPOINT" \
     --keys_dir /keys \
