@@ -263,7 +263,20 @@ detached_start() {
     fi
   fi
   SECRETNAME="keystore_password"
-  echo "$CONFIGPATH"
+  
+  if docker service ls --format '{{.Name}}' | grep -q "^${SERVICENAME}$"; then
+    echo "ERROR: Service '$SERVICENAME' already exists."
+    echo "Please stop the service first (option 3) or use a different service name."
+    sleep 3
+    return 0
+  fi
+  
+  echo "Starting service: $SERVICENAME"
+  echo "Config path: $CONFIGPATH"
+  echo ""
+  
+  trap 'echo ""; echo "Error occurred while starting service."; echo "Returning to menu..."; sleep 2; trap - ERR; return 0' ERR
+  
   docker service create \
     --name "$SERVICENAME" \
     --restart-condition any \
@@ -274,7 +287,26 @@ detached_start() {
     --consensus_endpoint "$CONSENSUSENDPOINT" \
     --execution_endpoint "$EXECUTIONENDPOINT" \
     --keys_dir /keys \
-    --withdraw_address "$WITHDRAWADDRESS"
+    --withdraw_address "$WITHDRAWADDRESS" || {
+    echo ""
+    echo "ERROR: Failed to create service."
+    echo "Please check:"
+    echo "  - Service name is not already in use"
+    echo "  - Config path exists: $CONFIGPATH"
+    echo "  - Docker secret exists: $SECRETNAME"
+    echo ""
+    echo "Returning to menu..."
+    sleep 3
+    trap - ERR
+    return 0
+  }
+  
+  # Reset trap
+  trap - ERR
+  
+  echo ""
+  echo "Service '$SERVICENAME' started successfully!"
+  sleep 2
 }
 
 
