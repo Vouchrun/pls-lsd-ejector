@@ -244,8 +244,22 @@ detached_logs() {
     read -r -p "Enter the service name for logs [default: ejector]: " SERVICENAME
     SERVICENAME="${SERVICENAME:-ejector}"
   fi
-  docker service logs -f --tail 100 "$SERVICENAME"
+  
+  echo "========================================="
+  echo "Showing logs for: $SERVICENAME"
+  echo "Press Ctrl+C to return to menu"
+  echo "========================================="
+  echo ""
+  
+  # Trap SIGINT (Ctrl+C) to return gracefully
+  trap 'echo ""; echo "Returning to menu..."; sleep 1; trap - INT; return 0' INT
+  
+  docker service logs -f --tail 100 "$SERVICENAME" || true
+  
+  # Reset trap (in case logs exit normally)
+  trap - INT
 }
+
 
 detached_remove() {
   detached_stop
