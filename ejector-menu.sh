@@ -103,6 +103,13 @@ interactive_start() {
     docker rm "$CONTAINERNAME" 2>/dev/null || true
   fi
 
+  echo "Starting container: $CONTAINERNAME"
+  echo "Press Ctrl+C to stop the container and return to menu"
+  echo ""
+
+  # Trap to handle Ctrl+C and container exit/failure
+  trap 'echo ""; echo "Container stopped. Cleaning up..."; docker stop "$CONTAINERNAME" 2>/dev/null || true; docker rm "$CONTAINERNAME" 2>/dev/null || true; echo "Returning to menu..."; sleep 2; trap - INT EXIT; return 0' INT EXIT
+
   docker run --pull always \
     --name "$CONTAINERNAME" \
     -it \
@@ -113,7 +120,20 @@ interactive_start() {
       --consensus_endpoint "$CONSENSUSENDPOINT" \
       --execution_endpoint "$EXECUTIONENDPOINT" \
       --keys_dir /keys \
-      --withdraw_address "$WITHDRAWADDRESS"
+      --withdraw_address "$WITHDRAWADDRESS" || {
+    echo "Container failed or stopped unexpectedly."
+    docker stop "$CONTAINERNAME" 2>/dev/null || true
+    docker rm "$CONTAINERNAME" 2>/dev/null || true
+    echo "Returning to menu..."
+    sleep 2
+    trap - INT EXIT
+    return 0
+  }
+
+  # Reset trap if container exits normally
+  trap - INT EXIT
+  echo "Container exited. Returning to menu..."
+  sleep 2
 }
 
 
@@ -208,8 +228,15 @@ detached_setup() {
 detached_start() {
   check_root
   if [ -z "${SERVICENAME:-}" ] || [ -z "${CONFIGPATH:-}" ]; then
-    echo "You must run setup first!"
-    return 1
+    echo "Setup not found. Running setup first..."
+    sleep 2
+    detached_setup
+    # After setup completes, check if user wants to continue starting
+    if [ -z "${SERVICENAME:-}" ] || [ -z "${CONFIGPATH:-}" ]; then
+      echo "Setup incomplete. Returning to menu."
+      sleep 2
+      return 0
+    fi
   fi
   SECRETNAME="keystore_password"
   echo "$CONFIGPATH"
