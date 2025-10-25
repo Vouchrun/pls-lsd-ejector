@@ -96,6 +96,13 @@ interactive_start() {
     interactive_setup
   fi
 
+  # Check if container already exists and remove it
+  if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINERNAME}$"; then
+    echo "Container '$CONTAINERNAME' already exists. Removing it..."
+    docker stop "$CONTAINERNAME" 2>/dev/null || true
+    docker rm "$CONTAINERNAME" 2>/dev/null || true
+  fi
+
   docker run --pull always \
     --name "$CONTAINERNAME" \
     -it \
@@ -108,6 +115,7 @@ interactive_start() {
       --keys_dir /keys \
       --withdraw_address "$WITHDRAWADDRESS"
 }
+
 
 interactive_stop() {
   check_root
@@ -145,59 +153,53 @@ detached_setup() {
   read -r -p "Custom service name [default: ejector]: " SERVICENAME
   SERVICENAME="${SERVICENAME:-ejector}"
 
-  PASSWORDFILEDEFAULT="$CONFIGPATH/keystore.pwd"
-  read -e -r -p "Enter password file path [default: $PASSWORDFILEDEFAULT]: " PASSWORDFILE
-  PASSWORDFILE="${PASSWORDFILE:-$PASSWORDFILEDEFAULT}"
-  mkdir -p "$(dirname "$PASSWORDFILE")"
-
   SECRETNAME="keystore_password"
 
-  PASSWORD_ALREADY_THERE=false
-  if [ -f "$PASSWORDFILE" ]; then
-    read -r -p "Password file exists. Overwrite? [y/N]: " OVERWRITE
-    if [[ ! "$OVERWRITE" =~ ^[Yy]$ ]]; then
-      echo "Using existing password file: $PASSWORDFILE"
-      PASSWORD_ALREADY_THERE=true
+  # Check if Docker secret already exists
+  SECRET_EXISTS=false
+  if docker secret ls --format '{{.Name}}' | grep -q "^${SECRETNAME}$"; then
+    SECRET_EXISTS=true
+    echo "Docker secret '$SECRETNAME' already exists."
+    read -r -p "Do you want to replace it? [y/N]: " REPLACE_SECRET
+    if [[ ! "$REPLACE_SECRET" =~ ^[Yy]$ ]]; then
+      echo "Using existing Docker secret: $SECRETNAME"
+      echo "Detached mode setup complete!"
+      sleep 2
+      return 0
     else
-      rm -f "$PASSWORDFILE"
+      echo "Removing existing service if running..."
+      docker service rm "$SERVICENAME" 2>/dev/null || true
+      echo "Removing existing secret..."
+      docker secret rm "$SECRETNAME"
+      SECRET_EXISTS=false
     fi
   fi
 
-  if [ "$PASSWORD_ALREADY_THERE" = false ]; then
-    stty -echo
-    echo -n "Enter keystore password: "
-    read PASS1
-    stty echo
-    echo
-    echo -n "Confirm password: "
-    stty -echo
-    read PASS2
-    stty echo
-    echo
-    if [ "$PASS1" != "$PASS2" ]; then
-      echo "Passwords do not match!"
-      exit 1
-    fi
-    umask 077
-    printf "%s" "$PASS1" > "$PASSWORDFILE"
-    chmod 600 "$PASSWORDFILE"
-    chown 65532:65532 "$PASSWORDFILE" 2>/dev/null || true
-    unset PASS1 PASS2
+  # Prompt for password (no file involved)
+  echo "Enter keystore password:"
+  stty -echo
+  read PASS1
+  stty echo
+  echo
+  echo "Confirm password:"
+  stty -echo
+  read PASS2
+  stty echo
+  echo
+
+  if [ "$PASS1" != "$PASS2" ]; then
+    echo "Passwords do not match!"
+    exit 1
   fi
 
-  echo "Creating Docker secret $SECRETNAME from password file..."
-  if docker secret ls | grep -q "$SECRETNAME"; then
-    docker service rm "$SERVICENAME" 2>/dev/null || true
-    docker secret rm "$SECRETNAME"
-  fi
-  docker secret create "$SECRETNAME" "$PASSWORDFILE"
-  echo "Docker secret created."
-  if command -v shred &>/dev/null; then
-    shred -vfz -n 10 "$PASSWORDFILE"
-  else
-    rm -f "$PASSWORDFILE"
-  fi
-
+  # Create Docker secret directly from stdin
+  echo "Creating Docker secret $SECRETNAME..."
+  printf "%s" "$PASS1" | docker secret create "$SECRETNAME" -
+  
+  # Clear password variables
+  unset PASS1 PASS2
+  
+  echo "Docker secret created successfully."
   echo "Detached mode setup complete!"
   sleep 2
 }
