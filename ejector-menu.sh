@@ -42,29 +42,32 @@ ensure_swarm_initialized() {
 
 prompt_network_type() {
   local NETWORKTYPE
-  read -r -p "Use Mainnet or Testnet settings [Main/Test] (default: Main): " NETWORKTYPE
-  NETWORKTYPE=${NETWORKTYPE:-Main}
-  NETWORKTYPE=$(echo "$NETWORKTYPE" | tr '[:upper:]' '[:lower:]')
-  case "$NETWORKTYPE" in
-    main)
-        TESTNET=false
-        CONFIGPATHDEFAULT="blockchain/validator/keys"
-        CONSENSUSENDPOINT="https://rpc-pulsechain.g4mm4.io/beacon-api"
-        EXECUTIONENDPOINT="https://rpc-pulsechain.g4mm4.io"
-        WITHDRAWADDRESS="0x1F082785Ca889388Ce523BF3de6781E40b99B060"
-        ;;
-    test)
-        TESTNET=true
-        CONFIGPATHDEFAULT="blockchain/validator/keys-testnet"
-        CONSENSUSENDPOINT="https://rpc-testnet-pulsechain.g4mm4.io/beacon-api"
-        EXECUTIONENDPOINT="https://rpc-testnet-pulsechain.g4mm4.io"
-        WITHDRAWADDRESS="0x555E33C8782A0CeF14d2e9064598CE991f58Bc74"
-        ;;
-    *)
-        echo "Invalid selection. Please enter Main or Test."
-        exit 1
-        ;;
-  esac
+  while true; do
+    read -r -p "Use Mainnet or Testnet settings [Main/Test] (default: Main): " NETWORKTYPE
+    NETWORKTYPE=${NETWORKTYPE:-Main}
+    NETWORKTYPE=$(echo "$NETWORKTYPE" | tr '[:upper:]' '[:lower:]')
+    case "$NETWORKTYPE" in
+      main)
+          TESTNET=false
+          CONFIGPATHDEFAULT="blockchain/validator/keys"
+          CONSENSUSENDPOINT="https://rpc-pulsechain.g4mm4.io/beacon-api"
+          EXECUTIONENDPOINT="https://rpc-pulsechain.g4mm4.io"
+          WITHDRAWADDRESS="0x1F082785Ca889388Ce523BF3de6781E40b99B060"
+          break
+          ;;
+      test)
+          TESTNET=true
+          CONFIGPATHDEFAULT="blockchain/validator/keys-testnet"
+          CONSENSUSENDPOINT="https://rpc-testnet-pulsechain.g4mm4.io/beacon-api"
+          EXECUTIONENDPOINT="https://rpc-testnet-pulsechain.g4mm4.io"
+          WITHDRAWADDRESS="0x555E33C8782A0CeF14d2e9064598CE991f58Bc74"
+          break
+          ;;
+      *)
+          echo "Invalid selection. Please enter Main or Test."
+          ;;
+    esac
+  done
 }
 
 interactive_setup() {
@@ -72,14 +75,19 @@ interactive_setup() {
   install_docker_if_missing
   prompt_network_type
 
-  read -e -r -p "Enter keystore location [default: $CONFIGPATHDEFAULT]: " CONFIGPATH
-  CONFIGPATH="${CONFIGPATH:-$CONFIGPATHDEFAULT}"
-  CONFIGPATH="${CONFIGPATH%/}"
+  # Loop until valid config path is provided
+  while true; do
+    read -e -r -p "Enter keystore location [default: $CONFIGPATHDEFAULT]: " CONFIGPATH
+    CONFIGPATH="${CONFIGPATH:-$CONFIGPATHDEFAULT}"
+    CONFIGPATH="${CONFIGPATH%/}"
 
-  if [ ! -d "$CONFIGPATH" ]; then
-    echo "ERROR: Config path $CONFIGPATH does not exist"
-    exit 1
-  fi
+    if [ ! -d "$CONFIGPATH" ]; then
+      echo "ERROR: Config path '$CONFIGPATH' does not exist"
+      echo "Please enter a valid directory path."
+    else
+      break
+    fi
+  done
 
   read -r -p "Custom container name [default: ejector]: " CONTAINERNAME
   CONTAINERNAME="${CONTAINERNAME:-ejector}"
@@ -161,14 +169,19 @@ detached_setup() {
   ensure_swarm_initialized
   prompt_network_type
 
-  read -e -r -p "Enter keystore location [default: $CONFIGPATHDEFAULT]: " CONFIGPATH
-  CONFIGPATH="${CONFIGPATH:-$CONFIGPATHDEFAULT}"
-  CONFIGPATH="${CONFIGPATH%/}"
+  while true; do
+    read -e -r -p "Enter keystore location [default: $CONFIGPATHDEFAULT]: " CONFIGPATH
+    CONFIGPATH="${CONFIGPATH:-$CONFIGPATHDEFAULT}"
+    CONFIGPATH="${CONFIGPATH%/}"
 
-  if [ ! -d "$CONFIGPATH" ]; then
-    echo "ERROR: Config path $CONFIGPATH does not exist"
-    exit 1
-  fi
+    if [ ! -d "$CONFIGPATH" ]; then
+      echo "ERROR: Config path '$CONFIGPATH' does not exist"
+      echo "Please enter a valid directory path."
+      echo ""
+    else
+      break
+    fi
+  done
 
   read -r -p "Custom service name [default: ejector]: " SERVICENAME
   SERVICENAME="${SERVICENAME:-ejector}"
@@ -196,21 +209,32 @@ detached_setup() {
   fi
 
   # Prompt for password (no file involved)
-  echo "Enter keystore password:"
-  stty -echo
-  read PASS1
-  stty echo
-  echo
-  echo "Confirm password:"
-  stty -echo
-  read PASS2
-  stty echo
-  echo
+  while true; do
+    echo "Enter keystore password:"
+    stty -echo
+    read PASS1
+    stty echo
+    echo
+    echo "Confirm password:"
+    stty -echo
+    read PASS2
+    stty echo
+    echo
 
-  if [ "$PASS1" != "$PASS2" ]; then
-    echo "Passwords do not match!"
-    exit 1
-  fi
+    if [ "$PASS1" != "$PASS2" ]; then
+      echo "ERROR: Passwords do not match!"
+      echo "Please try again."
+      echo ""
+      unset PASS1 PASS2
+    elif [ -z "$PASS1" ]; then
+      echo "ERROR: Password cannot be empty!"
+      echo "Please try again."
+      echo ""
+      unset PASS1 PASS2
+    else
+      break
+    fi
+  done
 
   # Create Docker secret directly from stdin
   echo "Creating Docker secret $SECRETNAME..."
@@ -290,7 +314,7 @@ detached_logs() {
 
 detached_remove() {
   detached_stop
-  SECRETNAME="keystorepassword"
+  SECRETNAME="keystore_password"
   if docker secret ls | grep -q "$SECRETNAME"; then
     docker secret rm "$SECRETNAME"
     echo "Docker secret $SECRETNAME removed."
