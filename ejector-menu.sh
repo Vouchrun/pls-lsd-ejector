@@ -96,7 +96,7 @@ save_config() {
       testnet: $testnet
     }' > "$CONFIG_FILE"
   
-  echo "Configuration saved to $CONFIG_FILE"
+  echo -e "\033[1;32mConfiguration saved to $CONFIG_FILE\033[0m"
 }
 
 # Delete configuration file
@@ -322,14 +322,14 @@ interactive_stop() {
   fi
   docker stop "$CONTAINERNAME" || true
   docker rm "$CONTAINERNAME" || true
-  echo "Stopped and removed container: $CONTAINERNAME"
+  echo -e "\033[1;32mStopped and removed container: $CONTAINERNAME \033[0m"
   sleep 2
 }
 
 interactive_remove() {
   interactive_stop
   delete_config
-  echo "Removal of additional files (config/start scripts) not implemented by default."
+  echo -e "\033[1;32mRemoval of this Ejector tool (ejector-menu.sh) needs to be done manually.\033[0m"
   sleep 2
 }
 
@@ -524,10 +524,10 @@ detached_remove() {
   SECRETNAME="keystore_password"
   if docker secret ls | grep -q "$SECRETNAME"; then
     docker secret rm "$SECRETNAME"
-    echo "Docker secret $SECRETNAME removed."
+    echo -e "\033[1;32mDocker secret $SECRETNAME removed.\033[0m"
   fi
   delete_config
-  echo "Removal of of this Ejector tool (ejector-menu.sh) needs to be done manually."
+  echo -e "\033[1;32mRemoval of this Ejector tool (ejector-menu.sh) needs to be done manually.\033[0m"
   sleep 2
 }
 
