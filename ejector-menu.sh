@@ -52,7 +52,7 @@ prompt_network_type() {
           CONFIGPATHDEFAULT="blockchain/validator/keys"
           CONSENSUSENDPOINT_DEFAULT="https://rpc-pulsechain.g4mm4.io/beacon-api"
           EXECUTIONENDPOINT_DEFAULT="https://rpc-pulsechain.g4mm4.io"
-          WITHDRAWADDRESS_DEFAULT="0x1F082785Ca889388Ce523BF3de6781E40b99B060"
+          WITHDRAWADDRESS="0x1F082785Ca889388Ce523BF3de6781E40b99B060"
           break
           ;;
       test)
@@ -60,7 +60,7 @@ prompt_network_type() {
           CONFIGPATHDEFAULT="blockchain/validator/keys-testnet"
           CONSENSUSENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io/beacon-api"
           EXECUTIONENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io"
-          WITHDRAWADDRESS_DEFAULT="0x555E33C8782A0CeF14d2e9064598CE991f58Bc74"
+          WITHDRAWADDRESS="0x555E33C8782A0CeF14d2e9064598CE991f58Bc74"
           break
           ;;
       *)
@@ -76,9 +76,6 @@ prompt_network_type() {
 
   read -r -p "Enter Execution Endpoint [default: $EXECUTIONENDPOINT_DEFAULT]: " EXECUTIONENDPOINT
   EXECUTIONENDPOINT="${EXECUTIONENDPOINT:-$EXECUTIONENDPOINT_DEFAULT}"
-
-  read -r -p "Enter Withdraw Address [default: $WITHDRAWADDRESS_DEFAULT]: " WITHDRAWADDRESS
-  WITHDRAWADDRESS="${WITHDRAWADDRESS:-$WITHDRAWADDRESS_DEFAULT}"
 
   echo ""
   echo "Configuration:"
