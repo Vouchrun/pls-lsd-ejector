@@ -40,6 +40,153 @@ ensure_swarm_initialized() {
   fi
 }
 
+CONFIG_FILE="ejector_settings.json"
+
+# Load configuration from JSON file
+load_config() {
+  if [ ! -f "$CONFIG_FILE" ]; then
+    return 1
+  fi
+  
+  if ! command -v jq &> /dev/null; then
+    echo "Warning: jq not installed. Cannot read config file."
+    return 1
+  fi
+  
+  SERVICENAME=$(jq -r '.name // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
+  CONTAINERNAME=$(jq -r '.name // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
+  CONSENSUSENDPOINT=$(jq -r '.consensus_endpoint // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
+  EXECUTIONENDPOINT=$(jq -r '.execution_endpoint // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
+  CONFIGPATH=$(jq -r '.keystore_location // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
+  WITHDRAWADDRESS=$(jq -r '.withdraw_address // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
+  TESTNET=$(jq -r '.testnet // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
+  
+  return 0
+}
+
+# Save configuration to JSON file
+save_config() {
+  local name="${CONTAINERNAME:-${SERVICENAME:-ejector}}"
+  
+  if ! command -v jq &> /dev/null; then
+    echo "Warning: jq not installed. Installing..."
+    if command -v apt-get &> /dev/null; then
+      apt-get install -y jq >/dev/null 2>&1
+    elif command -v yum &> /dev/null; then
+      yum install -y jq >/dev/null 2>&1
+    else
+      echo "Cannot install jq automatically. Please install manually."
+      return 1
+    fi
+  fi
+  
+  jq -n \
+    --arg name "$name" \
+    --arg consensus "$CONSENSUSENDPOINT" \
+    --arg execution "$EXECUTIONENDPOINT" \
+    --arg keystore "$CONFIGPATH" \
+    --arg withdraw "$WITHDRAWADDRESS" \
+    --arg testnet "$TESTNET" \
+    '{
+      name: $name,
+      consensus_endpoint: $consensus,
+      execution_endpoint: $execution,
+      keystore_location: $keystore,
+      withdraw_address: $withdraw,
+      testnet: $testnet
+    }' > "$CONFIG_FILE"
+  
+  echo "Configuration saved to $CONFIG_FILE"
+}
+
+# Delete configuration file
+delete_config() {
+  if [ -f "$CONFIG_FILE" ]; then
+    rm "$CONFIG_FILE"
+    echo "Configuration file $CONFIG_FILE deleted."
+  fi
+}
+
+# Prompt user to use existing config or create new
+prompt_config_usage() {
+  if [ -f "$CONFIG_FILE" ]; then
+    echo ""
+    echo "Found existing configuration file: $CONFIG_FILE"
+    read -r -p "Do you want to use existing configuration? [Y/n]: " use_existing
+    use_existing=${use_existing:-Y}
+    
+    if [[ "$use_existing" =~ ^[Yy]$ ]]; then
+      if load_config; then
+        echo "Loaded configuration from file."
+        validate_and_fill_config
+        return 0
+      else
+        echo "Failed to load configuration. Creating new configuration..."
+        return 1
+      fi
+    else
+      echo "Creating new configuration..."
+      return 1
+    fi
+  fi
+  return 1
+}
+
+# Validate loaded config and prompt for missing values
+validate_and_fill_config() {
+  local need_save=false
+  
+  if [ -z "$TESTNET" ] || [ -z "$CONSENSUSENDPOINT" ] || [ -z "$EXECUTIONENDPOINT" ] || [ -z "$WITHDRAWADDRESS" ]; then
+    echo "Network configuration incomplete. Please provide network details."
+    prompt_network_type
+    need_save=true
+  else
+    if [ "$TESTNET" = "true" ]; then
+      echo "Network: Testnet"
+    else
+      echo "Network: Mainnet"
+    fi
+    echo "Consensus Endpoint: $CONSENSUSENDPOINT"
+    echo "Execution Endpoint: $EXECUTIONENDPOINT"
+    echo "Withdraw Address: $WITHDRAWADDRESS"
+  fi
+  
+  if [ -z "$CONFIGPATH" ] || [ ! -d "$CONFIGPATH" ]; then
+    echo ""
+    if [ -n "$CONFIGPATH" ]; then
+      echo "Saved keystore location '$CONFIGPATH' does not exist."
+    fi
+    while true; do
+      read -e -r -p "Enter keystore location: " CONFIGPATH
+      CONFIGPATH="${CONFIGPATH%/}"
+      
+      if [ ! -d "$CONFIGPATH" ]; then
+        echo "ERROR: Config path '$CONFIGPATH' does not exist"
+        echo "Please enter a valid directory path."
+      else
+        need_save=true
+        break
+      fi
+    done
+  else
+    echo "Keystore Location: $CONFIGPATH"
+  fi
+  
+  if [ -z "$CONTAINERNAME" ] && [ -z "$SERVICENAME" ]; then
+    read -r -p "Enter container/service name [default: ejector]: " name_input
+    name_input="${name_input:-ejector}"
+    CONTAINERNAME="$name_input"
+    SERVICENAME="$name_input"
+    need_save=true
+  else
+    echo "Name: ${CONTAINERNAME:-$SERVICENAME}"
+  fi
+  
+  if [ "$need_save" = true ]; then
+    save_config
+  fi
+}
+
 prompt_network_type() {
   local NETWORKTYPE
   while true; do
@@ -90,24 +237,29 @@ prompt_network_type() {
 interactive_setup() {
   check_root
   install_docker_if_missing
-  prompt_network_type
+  
+  if ! prompt_config_usage; then
+    prompt_network_type
 
-  # Loop until valid config path is provided
-  while true; do
-    read -e -r -p "Enter keystore location [default: $CONFIGPATHDEFAULT]: " CONFIGPATH
-    CONFIGPATH="${CONFIGPATH:-$CONFIGPATHDEFAULT}"
-    CONFIGPATH="${CONFIGPATH%/}"
+    # Loop until valid config path is provided
+    while true; do
+      read -e -r -p "Enter keystore location [default: $CONFIGPATHDEFAULT]: " CONFIGPATH
+      CONFIGPATH="${CONFIGPATH:-$CONFIGPATHDEFAULT}"
+      CONFIGPATH="${CONFIGPATH%/}"
 
-    if [ ! -d "$CONFIGPATH" ]; then
-      echo "ERROR: Config path '$CONFIGPATH' does not exist"
-      echo "Please enter a valid directory path."
-    else
-      break
-    fi
-  done
+      if [ ! -d "$CONFIGPATH" ]; then
+        echo "ERROR: Config path '$CONFIGPATH' does not exist"
+        echo "Please enter a valid directory path."
+      else
+        break
+      fi
+    done
 
-  read -r -p "Custom container name [default: ejector]: " CONTAINERNAME
-  CONTAINERNAME="${CONTAINERNAME:-ejector}"
+    read -r -p "Custom container name [default: ejector]: " CONTAINERNAME
+    CONTAINERNAME="${CONTAINERNAME:-ejector}"
+    
+    save_config
+  fi
 
   echo "Interactive mode configured!"
   echo "Container name: $CONTAINERNAME"
@@ -176,6 +328,7 @@ interactive_stop() {
 
 interactive_remove() {
   interactive_stop
+  delete_config
   echo "Removal of additional files (config/start scripts) not implemented by default."
   sleep 2
 }
@@ -184,24 +337,29 @@ detached_setup() {
   check_root
   install_docker_if_missing
   ensure_swarm_initialized
-  prompt_network_type
+  
+  if ! prompt_config_usage; then
+    prompt_network_type
 
-  while true; do
-    read -e -r -p "Enter keystore location [default: $CONFIGPATHDEFAULT]: " CONFIGPATH
-    CONFIGPATH="${CONFIGPATH:-$CONFIGPATHDEFAULT}"
-    CONFIGPATH="${CONFIGPATH%/}"
+    while true; do
+      read -e -r -p "Enter keystore location [default: $CONFIGPATHDEFAULT]: " CONFIGPATH
+      CONFIGPATH="${CONFIGPATH:-$CONFIGPATHDEFAULT}"
+      CONFIGPATH="${CONFIGPATH%/}"
 
-    if [ ! -d "$CONFIGPATH" ]; then
-      echo "ERROR: Config path '$CONFIGPATH' does not exist"
-      echo "Please enter a valid directory path."
-      echo ""
-    else
-      break
-    fi
-  done
+      if [ ! -d "$CONFIGPATH" ]; then
+        echo "ERROR: Config path '$CONFIGPATH' does not exist"
+        echo "Please enter a valid directory path."
+        echo ""
+      else
+        break
+      fi
+    done
 
-  read -r -p "Custom service name [default: ejector]: " SERVICENAME
-  SERVICENAME="${SERVICENAME:-ejector}"
+    read -r -p "Custom service name [default: ejector]: " SERVICENAME
+    SERVICENAME="${SERVICENAME:-ejector}"
+    
+    save_config
+  fi
 
   SECRETNAME="keystore_password"
 
@@ -368,6 +526,7 @@ detached_remove() {
     docker secret rm "$SECRETNAME"
     echo "Docker secret $SECRETNAME removed."
   fi
+  delete_config
   echo "Removal of of this Ejector tool (ejector-menu.sh) needs to be done manually."
   sleep 2
 }
