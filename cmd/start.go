@@ -38,7 +38,6 @@ type Keystore struct {
 
 // getKeystorePassword retrieves the keystore password from multiple sources in order:
 // 1. Docker Secret file at /run/secrets/keystore_password
-// 2. Environment variable KEYSTORE_PASSWORD
 // 3. Interactive prompt
 func getKeystorePassword() (string, error) {
 	// Try Docker Secret first (mounted by Docker Swarm or manual mount)
@@ -48,14 +47,6 @@ func getKeystorePassword() (string, error) {
 		if password != "" {
 			logrus.Info("Using keystore password from Docker Secret")
 			return password, nil
-		}
-	}
-
-	// Try environment variable
-	if accountsPassword, ok := os.LookupEnv("KEYSTORE_PASSWORD"); ok {
-		if accountsPassword != "" {
-			logrus.Info("Using keystore password from environment variable")
-			return accountsPassword, nil
 		}
 	}
 
