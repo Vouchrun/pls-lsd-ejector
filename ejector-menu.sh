@@ -9,7 +9,7 @@ fi
 
 check_root() {
   if [ "$EUID" -ne 0 ]; then
-    echo "Please run as "root" aka sudo"
+    echo -e "\033[1;91mPlease run as root/sudo\033[0m"
     exit 1
   fi
 }
@@ -71,11 +71,12 @@ prompt_network_type() {
 
   # Prompt for custom endpoints with defaults
   echo ""
-  read -r -p "Enter Consensus Endpoint [default: $CONSENSUSENDPOINT_DEFAULT]: " CONSENSUSENDPOINT
-  CONSENSUSENDPOINT="${CONSENSUSENDPOINT:-$CONSENSUSENDPOINT_DEFAULT}"
-
-  read -r -p "Enter Execution Endpoint [default: $EXECUTIONENDPOINT_DEFAULT]: " EXECUTIONENDPOINT
+  
+  read -r -p "Enter Execution RPC Endpoint [default: $EXECUTIONENDPOINT_DEFAULT]: " EXECUTIONENDPOINT
   EXECUTIONENDPOINT="${EXECUTIONENDPOINT:-$EXECUTIONENDPOINT_DEFAULT}"
+
+  read -r -p "Enter Consensus RPC Endpoint [default: $CONSENSUSENDPOINT_DEFAULT]: " CONSENSUSENDPOINT
+  CONSENSUSENDPOINT="${CONSENSUSENDPOINT:-$CONSENSUSENDPOINT_DEFAULT}"
 
   echo ""
   echo "Configuration:"
@@ -376,21 +377,21 @@ detached_remove() {
 # Display welcome message with formatted description
 display_welcome() {
   echo ""
-  echo -e "\033[1;33m=============================================================\033[0m"
-  echo -e "\033[1;33m          VOUCH EJECTOR SETUP & MANAGEMENT TOOL\033[0m"
-  echo -e "\033[1;33m=============================================================\033[0m"
+  echo -e "\033[1;34m=====================================================================\033[0m"
+  echo -e "\033[1;34m              VOUCH EJECTOR SETUP & MANAGEMENT TOOL\033[0m"
+  echo -e "\033[1;34m=====================================================================\033[0m"
   echo ""
   echo "This terminal app allows you to setup and manage the Ejector in Interactive"
   echo "or Detached mode. The Ejector client will make use of Docker containers"
   echo "in either mode."
   echo ""
-  echo -e "\033[1;33mInteractive Mode:\033[0m"
+  echo -e "\033[1;34mInteractive Mode:\033[0m"
   echo "  Setup up and Run a simple docker container for the Ejector."
   echo "  In this mode, you will enter the password at startup. If the"
   echo "  ejector stops for any reason, you will need to re-enter the password."
   echo "  While this is the most secure mode, auto-restart is not supported."
   echo ""
-  echo -e "\033[1;33mDetached Mode:\033[0m"
+  echo -e "\033[1;34mDetached Mode:\033[0m"
   echo "  Uses Docker Secrets (in simple Swarm mode) for a more robust setup"
   echo "  which supports auto-restart of the container. You will be guided"
   echo "  through the setup, and create a Secret (keystore_password) the container"
@@ -404,7 +405,7 @@ display_welcome() {
 main_menu() {
   while true; do
     echo ""
-    echo -e "\033[1;33m========== Ejector Mode Menu ==========\033[0m"
+    echo -e "\033[1;34m========== Ejector Mode Menu ==========\033[0m"
     echo "1) Interactive Mode Menu"
     echo "2) Detached Mode Menu"
     echo "3) Exit"
@@ -422,7 +423,7 @@ main_menu() {
 interactive_mode_menu() {
   while true; do
     echo ""
-    echo -e "\033[1;33m--- Interactive Mode ---\033[0m"
+    echo -e "\033[1;34m--- Interactive Mode ---\033[0m"
     echo "1) Setup Ejector"
     echo "2) Start Ejector"
     echo "3) Stop Ejector"
@@ -446,7 +447,7 @@ interactive_mode_menu() {
 detached_mode_menu() {
   while true; do
     echo ""
-    echo -e "\033[1;33m--- Detached Mode ---\033[0m"
+    echo -e "\033[1;34m--- Detached Mode ---\033[0m"
     echo "1) Setup Ejector (Also creates Docker Swarm)"
     echo "2) Start Ejector"
     echo "3) Stop Ejector"

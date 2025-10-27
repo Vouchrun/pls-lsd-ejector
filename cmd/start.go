@@ -51,7 +51,7 @@ func getKeystorePassword() (string, error) {
 	}
 
 	// Fall back to interactive prompt
-	logrus.Info("No password found in Docker Secret or environment variable, prompting for input")
+	logrus.Info("No password found in Docker Secret, prompting for input")
 	accountsPassword, err := prompt.PasswordPrompt(
 		"Enter the password for your imported accounts", prompt.NotEmpty,
 	)
