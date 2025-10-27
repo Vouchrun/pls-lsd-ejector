@@ -9,7 +9,7 @@ fi
 
 check_root() {
   if [ "$EUID" -ne 0 ]; then
-    echo "Please run as root"
+    echo "Please run as "root" aka sudo"
     exit 1
   fi
 }
@@ -244,7 +244,7 @@ detached_setup() {
   unset PASS1 PASS2
   
   echo "Docker secret created successfully."
-  echo "Detached mode setup complete!"
+  echo -e "\033[1;32mDetached mode setup complete!\033[0m"
   sleep 2
 }
 
@@ -305,7 +305,7 @@ detached_start() {
   trap - ERR
   
   echo ""
-  echo "Service '$SERVICENAME' started successfully!"
+  echo -e "\033[1;32mService '$SERVICENAME' started successfully!\033[0m"
   sleep 2
 }
 
@@ -313,7 +313,7 @@ detached_start() {
 detached_stop() {
   check_root
   if [ -z "${SERVICENAME:-}" ]; then
-    read -r -p "Enter the service name to stop [default: ejector]: " SERVICENAME
+    read -r -p "Enter the ejector service name to stop [default: ejector]: " SERVICENAME
     SERVICENAME="${SERVICENAME:-ejector}"
   fi
   docker service rm "$SERVICENAME" || true
@@ -324,7 +324,7 @@ detached_stop() {
 detached_logs() {
   check_root
   if [ -z "${SERVICENAME:-}" ]; then
-    read -r -p "Enter the service name for logs [default: ejector]: " SERVICENAME
+    read -r -p "Enter the ejector service name for logs [default: ejector]: " SERVICENAME
     SERVICENAME="${SERVICENAME:-ejector}"
   fi
   
@@ -351,17 +351,46 @@ detached_remove() {
     docker secret rm "$SECRETNAME"
     echo "Docker secret $SECRETNAME removed."
   fi
-  echo "Removal of any config/start files must be done manually if needed."
+  echo "Removal of of this Ejector tool (ejector-menu.sh) needs to be done manually."
   sleep 2
 }
 
 # ------------------ Terminal Menu ------------------
+
+# Display welcome message with formatted description
+display_welcome() {
+  echo ""
+  echo -e "\033[1;33m=============================================================\033[0m"
+  echo -e "\033[1;33m          VOUCH EJECTOR SETUP & MANAGEMENT TOOL\033[0m"
+  echo -e "\033[1;33m=============================================================\033[0m"
+  echo ""
+  echo "This terminal app allows you to setup and manage the Ejector in Interactive"
+  echo "or Detached mode. The Ejector client will make use of Docker containers"
+  echo "in either mode."
+  echo ""
+  echo -e "\033[1;33mInteractive Mode:\033[0m"
+  echo "  Setup up and Run a simple docker container for the Ejector."
+  echo "  In this mode, you will enter the password at startup. If the"
+  echo "  ejector stops for any reason, you will need to re-enter the password."
+  echo "  While this is the most secure mode, auto-restart is not supported."
+  echo ""
+  echo -e "\033[1;33mDetached Mode:\033[0m"
+  echo "  Uses Docker Secrets (in simple Swarm mode) for a more robust setup"
+  echo "  which supports auto-restart of the container. You will be guided"
+  echo "  through the setup, and create a Secret (keystore_password) the container"
+  echo "  uses at startup."
+  echo ""
+  echo -e "\033[1;32mPress ENTER to continue and setup the Ejector using your preferred mode.\033[0m"
+  read -r
+  clear
+}
+
 main_menu() {
   while true; do
     echo ""
-    echo "========== Ejector Menu =========="
-    echo "1) Interactive Mode"
-    echo "2) Detached Mode"
+    echo -e "\033[1;33m========== Ejector Mode Menu ==========\033[0m"
+    echo "1) Interactive Mode Menu"
+    echo "2) Detached Mode Menu"
     echo "3) Exit"
     read -p "Select option: " main_choice
 
@@ -377,7 +406,7 @@ main_menu() {
 interactive_mode_menu() {
   while true; do
     echo ""
-    echo "--- Interactive Mode ---"
+    echo -e "\033[1;33m--- Interactive Mode ---\033[0m"
     echo "1) Setup Ejector"
     echo "2) Start Ejector"
     echo "3) Stop Ejector"
@@ -401,12 +430,12 @@ interactive_mode_menu() {
 detached_mode_menu() {
   while true; do
     echo ""
-    echo "--- Detached Mode ---"
-    echo "1) Setup Ejector (Swarm)"
-    echo "2) Start Ejector (Swarm)"
-    echo "3) Stop Ejector (Swarm)"
+    echo -e "\033[1;33m--- Detached Mode ---\033[0m"
+    echo "1) Setup Ejector (Also creates Docker Swarm)"
+    echo "2) Start Ejector"
+    echo "3) Stop Ejector"
     echo "4) View Ejector Logs"
-    echo "5) Remove Ejector (Swarm)"
+    echo "5) Remove Ejector (Leaves Docker Swarm)"
     echo "6) Back to Main Menu"
     echo "7) Exit"
     read -p "Select option: " detached_choice
@@ -424,5 +453,6 @@ detached_mode_menu() {
   done
 }
 
-# Start
+# Start with welcome message
+display_welcome
 main_menu
