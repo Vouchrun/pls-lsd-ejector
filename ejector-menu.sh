@@ -492,7 +492,7 @@ detached_stop() {
     SERVICENAME="${SERVICENAME:-ejector}"
   fi
   docker service rm "$SERVICENAME" || true
-  echo "Stopped and removed Docker Swarm service: $SERVICENAME"
+  echo -e "\033[1;32mStopped and removed Docker $SERVICENAME swarm service\033[0m"
   sleep 2
 }
 
