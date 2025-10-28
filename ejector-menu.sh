@@ -196,17 +196,17 @@ prompt_network_type() {
     case "$NETWORKTYPE" in
       main)
           TESTNET=false
-          CONFIGPATHDEFAULT="blockchain/validator/keys"
-          CONSENSUSENDPOINT_DEFAULT="https://rpc-pulsechain.g4mm4.io/beacon-api"
-          EXECUTIONENDPOINT_DEFAULT="https://rpc-pulsechain.g4mm4.io"
+          CONFIGPATHDEFAULT="blockchain/validators"
+          CONSENSUSENDPOINT_DEFAULT="http://localhost:5052"
+          EXECUTIONENDPOINT_DEFAULT="http://localhost:8545"
           WITHDRAWADDRESS="0x1F082785Ca889388Ce523BF3de6781E40b99B060"
           break
           ;;
       test)
           TESTNET=true
-          CONFIGPATHDEFAULT="blockchain/validator/keys-testnet"
-          CONSENSUSENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io/beacon-api"
-          EXECUTIONENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io"
+          CONFIGPATHDEFAULT="blockchain/validators/testnet"
+          CONSENSUSENDPOINT_DEFAULT="http://localhost:5052"
+          EXECUTIONENDPOINT_DEFAULT="http://localhost:8545"
           WITHDRAWADDRESS="0x555E33C8782A0CeF14d2e9064598CE991f58Bc74"
           break
           ;;
