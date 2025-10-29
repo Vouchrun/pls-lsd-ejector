@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -33,6 +34,32 @@ type Keystore struct {
 	Version uint                   `json:"version"`
 	Name    string                 `json:"name"`
 	Path    string                 `json:"path"`
+}
+
+// getKeystorePassword retrieves the keystore password from multiple sources in order:
+// 1. Docker Secret file at /run/secrets/keystore_password
+// 3. Interactive prompt
+func getKeystorePassword() (string, error) {
+	// Try Docker Secret first (mounted by Docker Swarm or manual mount)
+	secretPath := "/run/secrets/keystore_password"
+	if secretData, err := os.ReadFile(secretPath); err == nil {
+		password := strings.TrimSpace(string(secretData))
+		if password != "" {
+			logrus.Info("Using keystore password from Docker Secret")
+			return password, nil
+		}
+	}
+
+	// Fall back to interactive prompt
+	logrus.Info("No password found in Docker Secret, prompting for input")
+	accountsPassword, err := prompt.PasswordPrompt(
+		"Enter the password for your imported accounts", prompt.NotEmpty,
+	)
+	if err != nil {
+		return "", fmt.Errorf("could not read account password: %w", err)
+	}
+
+	return accountsPassword, nil
 }
 
 func startCmd() *cobra.Command {
@@ -94,14 +121,9 @@ func startCmd() *cobra.Command {
 				return fmt.Errorf("no keystore found in directory %s", keysDir)
 			}
 
-			accountsPassword, ok := os.LookupEnv("KEYSTORE_PASSWORD")
-			if !ok {
-				accountsPassword, err = prompt.PasswordPrompt(
-					"Enter the password for your imported accounts", prompt.NotEmpty,
-				)
-				if err != nil {
-					return fmt.Errorf("could not read account password: %w", err)
-				}
+			accountsPassword, err := getKeystorePassword()
+			if err != nil {
+				return err
 			}
 
 			connection, err := shared.NewConnection(executionEndpoint, consensusEndpoint, nil, nil, nil)
