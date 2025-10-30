@@ -512,7 +512,7 @@ detached_logs() {
   # Trap SIGINT (Ctrl+C) to return gracefully
   trap 'echo ""; echo "Returning to menu..."; sleep 1; trap - INT; return 0' INT
   
-  docker service logs -f --tail 100 "$SERVICENAME" || true
+  docker service logs -f --no-task-ids --tail 100 "$SERVICENAME" || true
   
   # Reset trap (in case logs exit normally)
   trap - INT
