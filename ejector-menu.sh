@@ -197,16 +197,16 @@ prompt_network_type() {
       main)
           TESTNET=false
           CONFIGPATHDEFAULT="blockchain/validators"
-          CONSENSUSENDPOINT_DEFAULT="https://eth2-rpc.vouch.run"
-          EXECUTIONENDPOINT_DEFAULT="https://eth1-rpc.vouch.run"
+          EXECUTIONENDPOINT_DEFAULT="https://rpc.vouch.run"
+          CONSENSUSENDPOINT_DEFAULT="https://rpc-beacon.vouch.run"
           WITHDRAWADDRESS="0x1F082785Ca889388Ce523BF3de6781E40b99B060"
           break
           ;;
       test)
           TESTNET=true
           CONFIGPATHDEFAULT="blockchain/validators/testnet"
-          CONSENSUSENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io/beacon-api/"
           EXECUTIONENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io"
+          CONSENSUSENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io/beacon-api/"
           WITHDRAWADDRESS="0x555E33C8782A0CeF14d2e9064598CE991f58Bc74"
           break
           ;;
@@ -240,8 +240,8 @@ prompt_network_type() {
   echo ""
   echo "Configuration:"
   echo "  Network: $NETWORKTYPE"
-  echo "  Consensus Endpoint: $CONSENSUSENDPOINT"
   echo "  Execution Endpoint: $EXECUTIONENDPOINT"
+  echo "  Consensus Endpoint: $CONSENSUSENDPOINT"
   echo "  Withdraw Address: $WITHDRAWADDRESS"
   echo ""
 }
