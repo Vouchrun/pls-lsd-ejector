@@ -8,10 +8,11 @@ To learn more about PLS LSD, see [**PLS LSD Documentation and Guide**](https://v
 
 The below command will:
 
-- Install Docker (if not already installed)
-- Configure ejector directory to point to keystores
-- Enable automatic OS and ejector container updates (optional)
-- Start the ejector docker container the first time
+- Download the ejector management tool ejector-menu.sh which:
+- Installs Docker (if not already installed)
+- Selects mode of operation i.e. Detached or Interactive
+- Configures ejector settings (and saves to a file)
+- Controls; starting, stopping and removal of ejector client
 
 
 **Note: this command needs to be run as root.**
