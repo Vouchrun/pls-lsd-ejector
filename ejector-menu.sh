@@ -45,7 +45,7 @@ create_ejector_user_if_missing() {
   # Check if ejector user exists; create if it does not
   if ! id -u ejector >/dev/null 2>&1; then
     echo "User 'ejector' not found. Creating user and adding to docker group..."
-    useradd -m -G docker ejector
+    useradd -G docker ejector
     echo -e "\e[32mUser 'ejector' created and added to docker group successfully\e[0m"
   else
     echo "User 'ejector' already exists."
@@ -320,12 +320,13 @@ interactive_start() {
 
   EJECTOR_UID=$(id -u ejector)
   EJECTOR_GID=$(id -g ejector)
+  DOCKER_GID=$(getent group docker | cut -d: -f3)
   sudo -u ejector docker run --pull always \
     --name "$CONTAINERNAME" \
     -it \
     --restart unless-stopped \
     --network host \
-    --user "$EJECTOR_UID:$EJECTOR_GID" \
+    --user "$EJECTOR_UID:$DOCKER_GID" \
     -v "$CONFIGPATH":/keys \
     ghcr.io/vouchrun/pls-lsd-ejector:staging start \
       --consensus_endpoint "$CONSENSUSENDPOINT" \
@@ -489,13 +490,14 @@ detached_start() {
   
   EJECTOR_UID=$(id -u ejector)
   EJECTOR_GID=$(id -g ejector)
+  DOCKER_GID=$(getent group docker | cut -d: -f3)
   docker service create \
     --name "$SERVICENAME" \
     --restart-condition any \
     --network host \
     --mount type=bind,source="$CONFIGPATH",target=/keys \
     --secret "$SECRETNAME" \
-    --user "${EJECTOR_UID}:${EJECTOR_GID}" \
+    --user "${EJECTOR_UID}:${DOCKER_GID}" \
     ghcr.io/vouchrun/pls-lsd-ejector:staging start \
     --consensus_endpoint "$CONSENSUSENDPOINT" \
     --execution_endpoint "$EXECUTIONENDPOINT" \
