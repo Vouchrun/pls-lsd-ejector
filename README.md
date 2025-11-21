@@ -20,7 +20,7 @@ The below command will:
 **Notes: this command needs to be run as root.**
 
 ```bash
-curl -sL https://raw.githubusercontent.com/Vouchrun/pls-lsd-ejector/refs/heads/staging/ejector-menu.sh > ejector-menu.sh; sudo chmod +x ejector-menu.sh && sudo ./ejector-menu.sh
+curl -sL https://raw.githubusercontent.com/Vouchrun/pls-lsd-ejector/refs/heads/main/ejector-menu.sh > ejector-menu.sh; sudo chmod +x ejector-menu.sh && sudo ./ejector-menu.sh
 ```
 
 
