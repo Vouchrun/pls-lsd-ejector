@@ -226,17 +226,17 @@ prompt_network_type() {
     case "$NETWORKTYPE" in
       main)
           TESTNET=false
-          CONFIGPATHDEFAULT="blockchain/validator/keys"
-          CONSENSUSENDPOINT_DEFAULT="https://rpc-pulsechain.g4mm4.io/beacon-api"
-          EXECUTIONENDPOINT_DEFAULT="https://rpc-pulsechain.g4mm4.io"
+          CONFIGPATHDEFAULT="blockchain/validators"
+          EXECUTIONENDPOINT_DEFAULT="https://rpc.vouch.run"
+          CONSENSUSENDPOINT_DEFAULT="https://rpc-beacon.vouch.run"
           WITHDRAWADDRESS="0x1F082785Ca889388Ce523BF3de6781E40b99B060"
           break
           ;;
       test)
           TESTNET=true
-          CONFIGPATHDEFAULT="blockchain/validator/keys-testnet"
-          CONSENSUSENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io/beacon-api"
+          CONFIGPATHDEFAULT="blockchain/validators/testnet"
           EXECUTIONENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io"
+          CONSENSUSENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io/beacon-api/"
           WITHDRAWADDRESS="0x555E33C8782A0CeF14d2e9064598CE991f58Bc74"
           break
           ;;
@@ -248,7 +248,19 @@ prompt_network_type() {
 
   # Prompt for custom endpoints with defaults
   echo ""
-  
+  echo "Let's configure our ejector endpoints i.e. RPC settings"
+  echo ""
+  echo "Ideally you would use "localhost" settings, however"
+  echo "only do this if you are running an Archive Beacon Node"
+  echo ""
+  echo "Otherwise set these to Public enpoints by accepting"
+  echo "the defaults values presented."
+  echo ""
+  echo "You can easily change these later in ejector_settings.json"
+  echo ""
+  echo "Documentation on this can be found at vouch.run - ejector client"
+  echo ""
+
   read -r -p "Enter Execution RPC Endpoint [default: $EXECUTIONENDPOINT_DEFAULT]: " EXECUTIONENDPOINT
   EXECUTIONENDPOINT="${EXECUTIONENDPOINT:-$EXECUTIONENDPOINT_DEFAULT}"
 
@@ -258,8 +270,8 @@ prompt_network_type() {
   echo ""
   echo "Configuration:"
   echo "  Network: $NETWORKTYPE"
-  echo "  Consensus Endpoint: $CONSENSUSENDPOINT"
   echo "  Execution Endpoint: $EXECUTIONENDPOINT"
+  echo "  Consensus Endpoint: $CONSENSUSENDPOINT"
   echo "  Withdraw Address: $WITHDRAWADDRESS"
   echo ""
 }
@@ -552,12 +564,77 @@ detached_logs() {
   # Trap SIGINT (Ctrl+C) to return gracefully
   trap 'echo ""; echo "Returning to menu..."; sleep 1; trap - INT; return 0' INT
   
-  docker service logs -f --tail 100 "$SERVICENAME" || true
+  docker service logs -f --no-task-ids --tail 100 "$SERVICENAME" || true
   
   # Reset trap (in case logs exit normally)
   trap - INT
 }
 
+detached_settings() {
+  # Check if config file exists
+  if [ ! -f "$CONFIG_FILE" ]; then
+    echo -e "\033[1;91mError: Configuration file not found.\033[0m"
+    echo "Please run '1) Setup Ejector (Also creates Docker Swarm)' from the menu first."
+    sleep 2
+    return 0
+  fi
+  
+  # Try nano first, then vi as fallback
+  if command -v nano &>/dev/null; then
+    nano "$CONFIG_FILE"
+  elif command -v vi &>/dev/null; then
+    vi "$CONFIG_FILE"
+  else
+    echo -e "\033[1;91mError: Neither nano nor vi is installed.\033[0m"
+    echo "This tool requires a text editor to modify settings."
+    echo ""
+    echo "To install nano (recommended):"
+    echo "  Debian/Ubuntu: sudo apt-get install nano"
+    echo "  CentOS/RHEL: sudo yum install nano"
+    echo ""
+    read -r -p "Install nano now? [y/N]: " install_choice
+    if [[ "$install_choice" =~ ^[Yy]$ ]]; then
+      if command -v apt-get &>/dev/null; then
+        apt-get update -qq
+        apt-get install -y nano >/dev/null 2>&1
+        if command -v nano &>/dev/null; then
+          nano "$CONFIG_FILE"
+        else
+          echo -e "\033[1;91mFailed to install nano. Please install manually.\033[0m"
+          sleep 2
+          return 0
+        fi
+      elif command -v yum &>/dev/null; then
+        yum install -y nano >/dev/null 2>&1
+        if command -v nano &>/dev/null; then
+          nano "$CONFIG_FILE"
+        else
+          echo -e "\033[1;91mFailed to install nano. Please install manually.\033[0m"
+          sleep 2
+          return 0
+        fi
+      else
+        echo -e "\033[1;91mUnsupported package manager. Please install nano or vi manually.\033[0m"
+        sleep 2
+        return 0
+      fi
+    else
+      echo "Returning to menu..."
+      sleep 1
+      return 0
+    fi
+  fi
+  
+  # After editing, verify config can be loaded
+  if load_config; then
+    echo -e "\033[1;32mSettings updated successfully\033[0m"
+    sleep 1
+  else
+    echo -e "\033[1;91mWarning: Configuration file may have errors\033[0m"
+    echo "Please check the JSON format and try again"
+    sleep 2
+  fi
+} 
 
 detached_remove() {
   detached_stop
@@ -651,9 +728,10 @@ detached_mode_menu() {
     echo "2) Start Ejector"
     echo "3) Stop Ejector"
     echo "4) View Ejector Logs"
-    echo "5) Remove Ejector (Leaves Docker Swarm)"
-    echo "6) Back to Main Menu"
-    echo "7) Exit"
+    echo "5) Edit Settings File"
+    echo "6) Remove Ejector (Leaves Docker Swarm)"
+    echo "7) Back to Main Menu"
+    echo "8) Exit"
     read -p "Select option: " detached_choice
 
     case "$detached_choice" in
@@ -661,9 +739,10 @@ detached_mode_menu() {
       2) detached_start ;;
       3) detached_stop ;;
       4) detached_logs ;;
-      5) detached_remove ;;
-      6) break ;;
-      7) exit 0 ;;
+      5) detached_settings ;;
+      6) detached_remove ;;
+      7) break ;;
+      8) exit 0 ;;
       *) echo "Invalid option, try again." ;;
     esac
   done
