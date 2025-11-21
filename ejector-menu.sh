@@ -328,7 +328,7 @@ interactive_start() {
     --network host \
     --user "$EJECTOR_UID:$DOCKER_GID" \
     -v "$CONFIGPATH":/keys \
-    ghcr.io/vouchrun/pls-lsd-ejector:staging start \
+    ghcr.io/vouchrun/pls-lsd-ejector:main start \
       --consensus_endpoint "$CONSENSUSENDPOINT" \
       --execution_endpoint "$EXECUTIONENDPOINT" \
       --keys_dir /keys \
@@ -498,7 +498,7 @@ detached_start() {
     --mount type=bind,source="$CONFIGPATH",target=/keys \
     --secret "$SECRETNAME" \
     --user "${EJECTOR_UID}:${DOCKER_GID}" \
-    ghcr.io/vouchrun/pls-lsd-ejector:staging start \
+    ghcr.io/vouchrun/pls-lsd-ejector:main start \
     --consensus_endpoint "$CONSENSUSENDPOINT" \
     --execution_endpoint "$EXECUTIONENDPOINT" \
     --keys_dir /keys \
