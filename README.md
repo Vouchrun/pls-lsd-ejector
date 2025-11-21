@@ -9,13 +9,15 @@ To learn more about PLS LSD, see [**PLS LSD Documentation and Guide**](https://v
 The below command will:
 
 - Download the ejector management tool ejector-menu.sh which:
-- Installs Docker (if not already installed)
-- Selects mode of operation i.e. Detached or Interactive
-- Configures ejector settings (and saves to a file)
-- Controls; starting, stopping and removal of ejector client
+  - Installs Docker (if not already installed)
+  - Creates a "ejector" user and "docker" group
+  - Selects mode of operation i.e. Detached or Interactive
+  - Configures ejector settings (and saves to a file)
+  - Controls; starting, stopping and removal of ejector client
+    - runs the docker container using the ejector user and docker group.
 
 
-**Note: this command needs to be run as root.**
+**Notes: this command needs to be run as root.**
 
 ```bash
 curl -sL https://raw.githubusercontent.com/Vouchrun/pls-lsd-ejector/refs/heads/main/ejector-menu.sh > ejector-menu.sh; sudo chmod +x ejector-menu.sh && sudo ./ejector-menu.sh
