@@ -32,6 +32,36 @@ install_docker_if_missing() {
   fi
 }
 
+create_ejector_user_if_missing() {
+  # Check if docker group exists; create if it does not
+  if ! getent group docker >/dev/null 2>&1; then
+    echo "Docker group not found. Creating docker group..."
+    groupadd docker
+    echo -e "\e[32mDocker group created successfully\e[0m"
+  else
+    echo "Docker group already exists."
+  fi
+
+  # Check if ejector user exists; create if it does not
+  if ! id -u ejector >/dev/null 2>&1; then
+    echo "User 'ejector' not found. Creating user and adding to docker group..."
+    useradd -m -G docker ejector
+    echo -e "\e[32mUser 'ejector' created and added to docker group successfully\e[0m"
+  else
+    echo "User 'ejector' already exists."
+  fi
+
+  # Ensure ejector is in docker group (in case group membership changed)
+  if ! groups ejector | grep -qw docker; then
+    echo "Adding user 'ejector' to docker group..."
+    usermod -aG docker ejector
+    echo -e "\e[32mUser 'ejector' added to docker group successfully\e[0m"
+  else
+    echo "User 'ejector' is already a member of the docker group."
+  fi
+}
+
+
 ensure_swarm_initialized() {
   SWARM_STATE="$(docker info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null)"
   if [ "$SWARM_STATE" != "active" ]; then
@@ -237,7 +267,8 @@ prompt_network_type() {
 interactive_setup() {
   check_root
   install_docker_if_missing
-  
+  create_ejector_user_if_missing
+
   if ! prompt_config_usage; then
     prompt_network_type
 
@@ -287,11 +318,14 @@ interactive_start() {
   # Trap to handle Ctrl+C and container exit/failure
   trap 'echo ""; echo "Container stopped. Cleaning up..."; docker stop "$CONTAINERNAME" 2>/dev/null || true; docker rm "$CONTAINERNAME" 2>/dev/null || true; echo "Returning to menu..."; sleep 2; trap - INT EXIT; return 0' INT EXIT
 
-  docker run --pull always \
+  EJECTOR_UID=$(id -u ejector)
+  EJECTOR_GID=$(id -g ejector)
+  sudo -u ejector docker run --pull always \
     --name "$CONTAINERNAME" \
     -it \
     --restart unless-stopped \
     --network host \
+    --user "$EJECTOR_UID:$EJECTOR_GID" \
     -v "$CONFIGPATH":/keys \
     ghcr.io/vouchrun/pls-lsd-ejector:staging start \
       --consensus_endpoint "$CONSENSUSENDPOINT" \
@@ -337,6 +371,7 @@ detached_setup() {
   check_root
   install_docker_if_missing
   ensure_swarm_initialized
+  create_ejector_user_if_missing
   
   if ! prompt_config_usage; then
     prompt_network_type
@@ -413,7 +448,7 @@ detached_setup() {
 
   # Create Docker secret directly from stdin
   echo "Creating Docker secret $SECRETNAME..."
-  printf "%s" "$PASS1" | docker secret create "$SECRETNAME" -
+  printf "%s" "$PASS1" | sudo -u ejector docker secret create "$SECRETNAME" -
   
   # Clear password variables
   unset PASS1 PASS2
@@ -452,12 +487,15 @@ detached_start() {
   
   trap 'echo ""; echo "Error occurred while starting service."; echo "Returning to menu..."; sleep 2; trap - ERR; return 0' ERR
   
+  EJECTOR_UID=$(id -u ejector)
+  EJECTOR_GID=$(id -g ejector)
   docker service create \
     --name "$SERVICENAME" \
     --restart-condition any \
     --network host \
     --mount type=bind,source="$CONFIGPATH",target=/keys \
     --secret "$SECRETNAME" \
+    --user "${EJECTOR_UID}:${EJECTOR_GID}" \
     ghcr.io/vouchrun/pls-lsd-ejector:staging start \
     --consensus_endpoint "$CONSENSUSENDPOINT" \
     --execution_endpoint "$EXECUTIONENDPOINT" \
