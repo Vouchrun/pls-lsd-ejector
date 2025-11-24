@@ -85,8 +85,8 @@ load_config() {
   
   SERVICENAME=$(jq -r '.name // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
   CONTAINERNAME=$(jq -r '.name // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
-  CONSENSUSENDPOINT=$(jq -r '.consensus_endpoint // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
   EXECUTIONENDPOINT=$(jq -r '.execution_endpoint // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
+  CONSENSUSENDPOINT=$(jq -r '.consensus_endpoint // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
   CONFIGPATH=$(jq -r '.keystore_location // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
   WITHDRAWADDRESS=$(jq -r '.withdraw_address // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
   TESTNET=$(jq -r '.testnet // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
@@ -112,15 +112,15 @@ save_config() {
   
   jq -n \
     --arg name "$name" \
-    --arg consensus "$CONSENSUSENDPOINT" \
     --arg execution "$EXECUTIONENDPOINT" \
+    --arg consensus "$CONSENSUSENDPOINT" \
     --arg keystore "$CONFIGPATH" \
     --arg withdraw "$WITHDRAWADDRESS" \
     --arg testnet "$TESTNET" \
     '{
       name: $name,
-      consensus_endpoint: $consensus,
       execution_endpoint: $execution,
+      consensus_endpoint: $consensus,
       keystore_location: $keystore,
       withdraw_address: $withdraw,
       testnet: $testnet
@@ -176,8 +176,8 @@ validate_and_fill_config() {
     else
       echo "Network: Mainnet"
     fi
-    echo "Consensus Endpoint: $CONSENSUSENDPOINT"
     echo "Execution Endpoint: $EXECUTIONENDPOINT"
+    echo "Consensus Endpoint: $CONSENSUSENDPOINT"
     echo "Withdraw Address: $WITHDRAWADDRESS"
   fi
   
@@ -227,16 +227,16 @@ prompt_network_type() {
       main)
           TESTNET=false
           CONFIGPATHDEFAULT="blockchain/validators"
-          EXECUTIONENDPOINT_DEFAULT="https://rpc.vouch.run"
-          CONSENSUSENDPOINT_DEFAULT="https://rpc-beacon.vouch.run"
+          EXECUTIONENDPOINT_DEFAULT="http://localhost:8545"
+          CONSENSUSENDPOINT_DEFAULT="http://localhost:5052"
           WITHDRAWADDRESS="0x1F082785Ca889388Ce523BF3de6781E40b99B060"
           break
           ;;
       test)
           TESTNET=true
           CONFIGPATHDEFAULT="blockchain/validators/testnet"
-          EXECUTIONENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io"
-          CONSENSUSENDPOINT_DEFAULT="https://rpc-testnet-pulsechain.g4mm4.io/beacon-api/"
+          EXECUTIONENDPOINT_DEFAULT="http://localhost:8545"
+          CONSENSUSENDPOINT_DEFAULT="http://localhost:5052"
           WITHDRAWADDRESS="0x555E33C8782A0CeF14d2e9064598CE991f58Bc74"
           break
           ;;
